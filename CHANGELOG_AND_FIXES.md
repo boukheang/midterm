@@ -149,3 +149,21 @@ All microservices now connect to the cloud MongoDB Atlas replica set (`clusterdb
 Created official, importable Postman files at the root of the repository:
 - `postman_collection.json`: Complete Postman v2.1.0 collection with all 5 test folders from `test.md`. Contains pre-configured tests that automatically capture JWT tokens on Login (`adminToken`, `studentToken`, `facultyToken`) and feed them into protected requests.
 - `postman_environment.json`: Postman environment with `baseUrl` (`http://localhost:4000`), switchable to EC2 public IP for cloud grading.
+
+## 8. Midterm Presentation Deck (.pptx)
+
+Created an enterprise-grade 10-slide widescreen (16:9) presentation file for project defense and live demonstration:
+- **File**: `Smart_Campus_Access_Control_Presentation.pptx`
+- **Generator**: `generate_deck.py`
+- **Design Theme**: Modern dark slate (`#0F172A`) with sky cyan & royal blue highlights, structured card layouts, service topology tables, and clean typography. No AI tropes or emojis.
+- **Slide Breakdown**:
+  1. Title & System Overview
+  2. 9-Container High-Level Architecture Topology
+  3. Microservices Matrix & Port Mapping (Ports 4000 to 5015)
+  4. Round-Robin Load Balancing Mechanism & Header Inspection Evidence
+  5. Security & RBAC Enforcement (Clearance Matrix & Negative Tests 4.1-4.4)
+  6. MongoDB Atlas Cloud Database Migration & Live Data Sync
+  7. Incident Response: Campus-Wide Emergency Lockdown System
+  8. Interactive Web Console UX & Demonstration Components
+  9. Turnkey Postman Suite & 18/18 Automated Test Results
+  10. Key Engineering Takeaways & Step-by-Step Live Demo Checklist
