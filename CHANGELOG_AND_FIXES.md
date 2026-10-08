@@ -167,3 +167,51 @@ Created an enterprise-grade 10-slide widescreen (16:9) presentation file for pro
   8. Interactive Web Console UX & Demonstration Components
   9. Turnkey Postman Suite & 18/18 Automated Test Results
   10. Key Engineering Takeaways & Step-by-Step Live Demo Checklist
+
+---
+
+## 9. Universal Room Identifier Resolver (Postman `:ENG-301` Fix)
+
+* **The Issue**:
+  When testing in Postman, URLs containing variable placeholders or paths like `http://localhost:4000/api/rooms/:ENG-301` resulted in:
+  ```json
+  {
+    "success": false,
+    "message": "Room ':ENG-301' not found."
+  }
+  ```
+  The database stored `ENG-301`, but Express received `:ENG-301` literally.
+* **The Solution**:
+  Implemented a universal identifier sanitizer `resolveRoomQuery(param)` across all room routes in `Room_Microservice/index.js` and `AccessLog_Microservice/index.js`.
+  It automatically strips leading colons, trims whitespace, and matches against `_id`, `roomNumber`, and uppercase forms, allowing both `ENG-301` and `:ENG-301` to resolve with 100% reliability.
+
+---
+
+## 10. Academic Classroom Management & Role Specialization
+
+Transformed generic room cards into an active, role-aware Academic Classroom & Course Management system:
+
+1. **Role Hierarchy**:
+   * **Admin (Campus Security & Academic Registrar)**:
+     * Full master clearance across the entire campus.
+     * Can assign/remove faculty instructors to any classroom (`POST /api/rooms/:id/assign-faculty`).
+     * Direct student enrollment override (`POST /api/rooms/:id/enroll-student`).
+     * Emergency campus lockdown controls.
+   * **Faculty (Course Instructors)**:
+     * Special teaching privileges:
+     * Access to a dedicated **Faculty Teaching Portal** displaying their assigned classes, course codes, and live student rosters.
+     * Ability to lock/unlock **their assigned classrooms** directly (`PATCH /api/rooms/:id/toggle-lock`). Non-assigned faculty attempting to toggle another teacher's room are rejected with `403 Forbidden`.
+     * Student enrollment review: view pending student requests and one-click **Approve** or **Reject** students (`POST /approve-enrollment`, `POST /reject-enrollment`).
+     * Removal of students from active rosters (`POST /remove-student`).
+     * Automatic NFC door badge access to their assigned teaching rooms.
+   * **Student**:
+     * Access to the **Student Course Enrollment Portal** listing available courses, professors, capacities, and live door lock states.
+     * Can submit enrollment requests to join classes (`POST /api/rooms/:id/request-enrollment`).
+     * Status indicator: `Not Enrolled` &rarr; `Pending Instructor Review` &rarr; `Enrolled • Door Access Granted`.
+     * Door badge swipe is granted upon faculty approval, activating immediate electronic door entry.
+
+2. **Access Log & Door Solenoid Integration**:
+   * Door badge swipe (`POST /api/logs/swipe`) verifies room status and checks if the swiping faculty is assigned to the room or if the swiping student is actively enrolled.
+   * Enrolled students and assigned faculty receive `accessDecision: 'GRANTED'` and `doorUnlocked: true`.
+   * Unassigned faculty or non-enrolled students receive `accessDecision: 'DENIED'` (`STUDENT_NOT_ENROLLED_IN_CLASS`).
+

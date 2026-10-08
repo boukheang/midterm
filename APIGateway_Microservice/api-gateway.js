@@ -191,17 +191,34 @@ app.use(['/login', '/api/auth/login', '/api/auth/verify'], (req, res) => {
 // MEMBER 1 MICROSERVICES: ROOM & PERMISSION MANAGEMENT
 // ====================================================================
 
-// Room Management Routes
-// Write (POST, PUT, DELETE) -> Admin only
+// Room Management & Classroom Enrollment Routes
+// Student enrollment request -> Student, Faculty, Admin
+// Faculty approve/reject/remove student -> Faculty, Admin
 // Lock Toggle (PATCH) -> Admin, Faculty
+// General Write (Create Room, Assign Faculty, Direct Enroll, PUT, DELETE) -> Admin only
 // Read (GET) -> Admin, Faculty, Student
 app.use('/api/rooms', authToken, (req, res, next) => {
-    if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
+    const url = req.originalUrl || req.url || '';
+
+    if (req.method === 'POST') {
+        if (url.includes('/request-enrollment')) {
+            return authRole(['student', 'faculty', 'admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
+        }
+        if (url.includes('/approve-enrollment') || url.includes('/reject-enrollment') || url.includes('/remove-student')) {
+            return authRole(['faculty', 'admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
+        }
+        // Other POST requests (create room, assign-faculty, enroll-student) -> Admin only
         return authRole(['admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
     }
+
     if (req.method === 'PATCH') {
         return authRole(['admin', 'faculty'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
     }
+
+    if (['PUT', 'DELETE'].includes(req.method)) {
+        return authRole(['admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
+    }
+
     // GET requests
     return authRole(['admin', 'faculty', 'student'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
 });

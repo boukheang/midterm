@@ -47,8 +47,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/reg",
-              "host": ["{{baseUrl}}"],
-              "path": ["reg"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reg"
+              ]
             },
             "description": "Registers an administrator account stored persistently in MongoDB Atlas."
           },
@@ -90,8 +94,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
             },
             "description": "Logs in as admin and automatically stores JWT token in {{adminToken}}."
           },
@@ -113,8 +121,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/reg",
-              "host": ["{{baseUrl}}"],
-              "path": ["reg"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reg"
+              ]
             },
             "description": "Registers a student user with standard privileges in MongoDB Atlas."
           },
@@ -156,8 +168,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
             },
             "description": "Logs in as student and automatically stores JWT token in {{studentToken}}."
           },
@@ -179,8 +195,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/reg",
-              "host": ["{{baseUrl}}"],
-              "path": ["reg"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reg"
+              ]
             },
             "description": "Registers a faculty member in MongoDB Atlas."
           },
@@ -222,8 +242,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
             },
             "description": "Logs in as faculty and stores JWT token in {{facultyToken}}."
           },
@@ -246,8 +270,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/rooms",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "rooms"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
             },
             "description": "Returns live room inventory from MongoDB Atlas. Synchronized with the web UI table."
           },
@@ -273,8 +302,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/rooms",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "rooms"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
             },
             "description": "Creates a new room in MongoDB Atlas. Immediately renders in the web console."
           },
@@ -300,8 +334,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/rooms/ENG-301/lock",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "rooms", "ENG-301", "lock"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "lock"
+              ]
             },
             "description": "Manually engages electronic deadbolt on target room."
           },
@@ -327,8 +368,15 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/rooms/ENG-301/lock",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "rooms", "ENG-301", "lock"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "lock"
+              ]
             },
             "description": "Unlocks electronic deadbolt on target room."
           },
@@ -368,8 +416,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
             },
             "description": "Negative check 4.1: Submitting incorrect password returns 401 Unauthorized."
           },
@@ -395,8 +447,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/rooms",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "rooms"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
             },
             "description": "Negative check 4.2: Requesting protected resource with no token returns 401."
           },
@@ -427,8 +484,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/rooms",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "rooms"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
             },
             "description": "Negative check 4.3: Submitting invalid/forged Bearer token returns 403 Forbidden."
           },
@@ -471,8 +533,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/rooms",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "rooms"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
             },
             "description": "Negative check 4.4: Role-Based Access Control denies room creation to students."
           },
@@ -519,8 +586,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/logs/swipe",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "logs", "swipe"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "swipe"
+              ]
             },
             "description": "Simulates door reader badge swipe. Gateway load balancer routes to AccessLog-Instance-1 or AccessLog-Instance-2."
           },
@@ -562,8 +635,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/logs/swipe",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "logs", "swipe"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "swipe"
+              ]
             },
             "description": "Second consecutive swipe. Verifies round-robin alternating distribution."
           },
@@ -581,8 +660,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/emergency/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "emergency", "status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emergency",
+                "status"
+              ]
             },
             "description": "Queries campus-wide emergency lockdown status."
           },
@@ -608,8 +693,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/emergency/lockdown",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "emergency", "lockdown"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emergency",
+                "lockdown"
+              ]
             },
             "description": "Engages emergency lockdown across all buildings. Immediately updates web UI banner."
           },
@@ -635,10 +726,343 @@
             },
             "url": {
               "raw": "{{baseUrl}}/api/emergency/lockdown",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "emergency", "lockdown"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "emergency",
+                "lockdown"
+              ]
             },
             "description": "Lifts emergency lockdown and restores standard access policies."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Classroom Enrollment & Faculty Management",
+      "item": [
+        {
+          "name": "6.1 Get Room by Number (Works with ENG-301 or :ENG-301)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301"
+              ]
+            },
+            "description": "Retrieves room details. Universal resolver strips any leading colon (:ENG-301 or ENG-301) seamlessly."
+          },
+          "response": []
+        },
+        {
+          "name": "6.2 Assign Faculty to Classroom (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"faculty@campus.edu\",\n  \"name\": \"Dr. Sokhadom\",\n  \"courseCode\": \"CS-301\",\n  \"courseTitle\": \"Distributed Systems & Cloud Computing\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/assign-faculty",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "assign-faculty"
+              ]
+            },
+            "description": "Admin assigns a faculty member as the instructor for a specific classroom and course."
+          },
+          "response": []
+        },
+        {
+          "name": "6.3 Student Request Class Enrollment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@campus.edu\",\n  \"name\": \"Student Candidate\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/request-enrollment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "request-enrollment"
+              ]
+            },
+            "description": "Student submits an enrollment request to join an active classroom course."
+          },
+          "response": []
+        },
+        {
+          "name": "6.4 View Classroom Roster & Pending Requests (Faculty / Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{facultyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/roster",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "roster"
+              ]
+            },
+            "description": "Returns assigned instructors, enrolled students, pending requests, and capacity numbers."
+          },
+          "response": []
+        },
+        {
+          "name": "6.5 Faculty Approve Student Enrollment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{facultyToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@campus.edu\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/approve-enrollment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "approve-enrollment"
+              ]
+            },
+            "description": "Instructor approves the student enrollment request. Immediately grants classroom door NFC access."
+          },
+          "response": []
+        },
+        {
+          "name": "6.6 Faculty Toggle Classroom Lock (Assigned Room)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{facultyToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isLocked\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/toggle-lock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "toggle-lock"
+              ]
+            },
+            "description": "Assigned faculty locks or unlocks their classroom door. Non-assigned faculty are rejected with 403 Forbidden."
+          },
+          "response": []
+        },
+        {
+          "name": "6.7 Enrolled Student Door Badge Swipe (Access Granted)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"USR-STUDENT\",\n  \"userEmail\": \"student@campus.edu\",\n  \"userRole\": \"student\",\n  \"roomId\": \"ROOM-ENG-301\",\n  \"roomNumber\": \"ENG-301\",\n  \"building\": \"Engineering Hall\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/swipe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "swipe"
+              ]
+            },
+            "description": "Simulates student NFC card swipe. Returns GRANTED because the student was approved into the class."
+          },
+          "response": []
+        },
+        {
+          "name": "6.8 Admin Direct Enroll Student (Bypass Approval)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student2@campus.edu\",\n  \"name\": \"Direct Student\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/enroll-student",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "enroll-student"
+              ]
+            },
+            "description": "Admin directly enrolls a student into a room without waiting for faculty review."
+          },
+          "response": []
+        },
+        {
+          "name": "6.9 Faculty / Admin Remove Student from Class",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{facultyToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student2@campus.edu\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/remove-student",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "remove-student"
+              ]
+            },
+            "description": "Removes student from the classroom roster and revokes their door access."
+          },
+          "response": []
+        },
+        {
+          "name": "6.10 Admin Remove Faculty from Room",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"faculty@campus.edu\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/remove-faculty",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "remove-faculty"
+              ]
+            },
+            "description": "Unassigns faculty instructor from the classroom."
           },
           "response": []
         }

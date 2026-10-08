@@ -782,7 +782,134 @@
 
         </div>
 
-        <!-- Section 3: Automated Verification Terminal -->
+        <!-- Section 3: Classroom & Course Portal (Role-Adaptive) -->
+        <div id="classroomPortalSection" style="margin-top: 24px;">
+            
+            <!-- A. Faculty Classroom Portal (For Faculty & Admin) -->
+            <div class="card" id="facultyClassroomCard" style="display: none; margin-bottom: 24px;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                        Faculty Teaching Portal &bull; Assigned Classrooms &amp; Student Requests
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="loadClassroomData()">Refresh Roster</button>
+                </div>
+                <div class="card-body">
+                    <div id="facultyClassesContainer">
+                        <div style="color: var(--text-muted); font-size: 13px;">Loading assigned classes...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- B. Student Classroom Portal (For Student role) -->
+            <div class="card" id="studentClassroomCard" style="display: none; margin-bottom: 24px;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
+                        Student Course Enrollment &amp; Classroom Access
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="loadClassroomData()">Refresh Courses</button>
+                </div>
+                <div class="card-body">
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+                        Browse campus courses and request enrollment. Once approved by your instructor, your physical NFC badge is immediately authorized for door swipe entry.
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Course / Room</th>
+                                    <th>Instructor</th>
+                                    <th>Capacity</th>
+                                    <th>Door Lock</th>
+                                    <th>My Enrollment Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentCoursesTableBody">
+                                <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Loading courses...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- C. Admin Classroom & Instructor Assignment Portal (For Admin role) -->
+            <div class="card" id="adminAssignmentCard" style="display: none; margin-bottom: 24px;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        Academic Administration &bull; Faculty Assignment &amp; Student Direct Enrollment
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="loadClassroomData()">Sync Classrooms</button>
+                </div>
+                <div class="card-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <!-- Assign Faculty Form -->
+                        <div style="border: 1px solid var(--border-subtle); border-radius: 6px; padding: 16px; background: var(--bg-surface);">
+                            <div style="font-weight: 600; font-size: 13px; margin-bottom: 8px;">Assign Instructor to Classroom</div>
+                            <div class="form-group">
+                                <label class="form-label">Target Classroom</label>
+                                <select class="form-control" id="assignFacultyRoomSelect"></select>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-group">
+                                    <label class="form-label">Faculty Email</label>
+                                    <input type="email" class="form-control" id="assignFacultyEmail" placeholder="faculty@campus.edu">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Faculty Name</label>
+                                    <input type="text" class="form-control" id="assignFacultyName" placeholder="Dr. Alan Turing">
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-group">
+                                    <label class="form-label">Course Code</label>
+                                    <input type="text" class="form-control" id="assignCourseCode" placeholder="CS-301">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Course Title</label>
+                                    <input type="text" class="form-control" id="assignCourseTitle" placeholder="Distributed Systems">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-sm" style="width: 100%; margin-top: 6px;" onclick="handleAssignFaculty()">Assign Instructor</button>
+                        </div>
+
+                        <!-- Direct Student Enrollment Form -->
+                        <div style="border: 1px solid var(--border-subtle); border-radius: 6px; padding: 16px; background: var(--bg-surface);">
+                            <div style="font-weight: 600; font-size: 13px; margin-bottom: 8px;">Direct Enroll Student (Admin Override)</div>
+                            <div class="form-group">
+                                <label class="form-label">Target Classroom</label>
+                                <select class="form-control" id="directEnrollRoomSelect"></select>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-group">
+                                    <label class="form-label">Student Email</label>
+                                    <input type="email" class="form-control" id="directStudentEmail" placeholder="student@campus.edu">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Student Name</label>
+                                    <input type="text" class="form-control" id="directStudentName" placeholder="Alex Student">
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; margin-top: 6px;">
+                                Directly bypasses teacher approval and immediately activates classroom NFC door access for this student.
+                            </div>
+                            <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="handleDirectEnrollStudent()">Direct Enroll Student</button>
+                        </div>
+                    </div>
+
+                    <!-- Campus Classrooms Roster Overview -->
+                    <div style="margin-top: 20px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 10px;">Campus Classroom Rosters Overview</div>
+                        <div id="adminClassroomsList"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Section 4: Automated Verification Terminal -->
         <div class="card" id="verificationSuiteSection" style="display: none;">
             <div class="card-header">
                 <div class="card-title">
@@ -1082,6 +1209,8 @@
         // Role-Based Access Control (RBAC): Control UI elements by role
         function applyRolePermissions(role) {
             const isAdmin = role === 'admin';
+            const isFaculty = role === 'faculty';
+            const isStudent = role === 'student';
 
             // 1. Quick Create Room Section (ADMIN ONLY)
             const createRoomSec = document.getElementById('createRoomSection');
@@ -1102,7 +1231,7 @@
             // 3. Room Management Table Action Column Header
             const roomActionTh = document.getElementById('roomActionTh');
             if (roomActionTh) {
-                roomActionTh.innerText = isAdmin ? 'Admin Action' : 'Clearance Policy';
+                roomActionTh.innerText = isAdmin ? 'Admin Action' : (isFaculty ? 'Lock Control' : 'Clearance Policy');
             }
 
             // 4. Update Swipe Simulator display
@@ -1120,6 +1249,23 @@
             if (verificationSuiteSection) {
                 verificationSuiteSection.style.display = isAdmin ? 'block' : 'none';
             }
+
+            // 6. Role-specific Classroom Cards
+            const facultyCard = document.getElementById('facultyClassroomCard');
+            if (facultyCard) {
+                facultyCard.style.display = (isFaculty || isAdmin) ? 'block' : 'none';
+            }
+            const studentCard = document.getElementById('studentClassroomCard');
+            if (studentCard) {
+                studentCard.style.display = isStudent ? 'block' : 'none';
+            }
+            const adminAssignmentCard = document.getElementById('adminAssignmentCard');
+            if (adminAssignmentCard) {
+                adminAssignmentCard.style.display = isAdmin ? 'block' : 'none';
+            }
+
+            // Load classroom data for the active role
+            loadClassroomData();
         }
 
         // Room Management
@@ -1144,21 +1290,29 @@
                 }
 
                 const isAdmin = currentRole === 'admin';
+                const isFaculty = currentRole === 'faculty';
+                const userEmail = (currentUser && currentUser.email) ? currentUser.email.toLowerCase() : '';
+
                 tableBody.innerHTML = rooms.map(room => {
                     const isLocked = room.isLocked || room.isEmergencyLocked;
                     const statusPill = room.isEmergencyLocked 
                         ? `<span class="pill pill-red">EMERGENCY LOCKED</span>` 
                         : (room.isLocked ? `<span class="pill pill-amber">LOCKED</span>` : `<span class="pill pill-green">UNLOCKED</span>`);
 
-                    const actionCell = isAdmin
-                        ? `<button class="btn btn-secondary btn-sm" onclick="toggleRoomLock('${room.roomNumber}', ${!room.isLocked})">
+                    const isAssignedFaculty = isFaculty && Array.isArray(room.assignedFaculty) && room.assignedFaculty.some(f => f.email && f.email.toLowerCase() === userEmail);
+
+                    let actionCell = `<span class="pill pill-neutral" style="opacity: 0.65;">Read Only</span>`;
+                    if (isAdmin || isAssignedFaculty) {
+                        actionCell = `<button class="btn btn-secondary btn-sm" onclick="toggleRoomLock('${room.roomNumber}', ${!room.isLocked})">
                                ${room.isLocked ? 'Unlock' : 'Lock'}
-                           </button>`
-                        : `<span class="pill pill-neutral" style="opacity: 0.65;">Read Only</span>`;
+                           </button>`;
+                    }
+
+                    const courseTag = room.courseCode ? `<span class="pill pill-neutral" style="margin-left: 6px; font-size: 10px;">${room.courseCode}</span>` : '';
 
                     return `
                         <tr>
-                            <td><strong>${room.roomNumber}</strong><div style="font-size:11px; color:var(--text-muted);">${room.roomName}</div></td>
+                            <td><strong>${room.roomNumber}</strong>${courseTag}<div style="font-size:11px; color:var(--text-muted);">${room.roomName}</div></td>
                             <td>${room.building} (Fl. ${room.floor})</td>
                             <td><span class="pill pill-neutral">${room.securityClearance}</span></td>
                             <td>${statusPill}</td>
@@ -1232,9 +1386,393 @@
 
             if (res.ok) {
                 await loadRoomInventory();
+                await loadClassroomData();
             } else {
                 const data = await res.json();
                 alert(`Action rejected: ${data.message || res.statusText}`);
+            }
+        }
+
+        // ====================================================================
+        // CLASSROOM ENROLLMENT & FACULTY MANAGEMENT HANDLERS
+        // ====================================================================
+        let allRoomsCache = [];
+
+        function selectRoomForSwipe(roomNum) {
+            const select = document.getElementById('swipeRoomSelect');
+            if (select) {
+                select.value = roomNum;
+                select.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                select.style.boxShadow = '0 0 0 2px var(--accent-primary)';
+                setTimeout(() => { select.style.boxShadow = ''; }, 1200);
+            }
+        }
+
+        async function loadClassroomData() {
+            try {
+                const res = await fetch('/api/rooms', {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                allRoomsCache = data.rooms || [];
+
+                const userEmail = (currentUser && currentUser.email) ? currentUser.email.toLowerCase() : '';
+                const isAdmin = currentRole === 'admin';
+                const isFaculty = currentRole === 'faculty';
+                const isStudent = currentRole === 'student';
+
+                // 1. Populate Admin Dropdowns & Roster Overview
+                if (isAdmin) {
+                    const assignSelect = document.getElementById('assignFacultyRoomSelect');
+                    const directSelect = document.getElementById('directEnrollRoomSelect');
+                    if (assignSelect && directSelect) {
+                        const opts = allRoomsCache.map(r => `<option value="${r.roomNumber}">${r.roomNumber} - ${r.roomName} (${r.courseCode || 'General'})</option>`).join('');
+                        assignSelect.innerHTML = opts;
+                        directSelect.innerHTML = opts;
+                    }
+
+                    const adminList = document.getElementById('adminClassroomsList');
+                    if (adminList) {
+                        adminList.innerHTML = allRoomsCache.map(r => {
+                            const facultyNames = (r.assignedFaculty || []).map(f => `${f.name || f.email} (${f.email})`).join(', ') || 'No Instructor Assigned';
+                            const enrolledCount = (r.enrolledStudents || []).length;
+                            const pendingCount = (r.pendingEnrollmentRequests || []).length;
+                            return `
+                                <div style="border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px; margin-bottom: 8px; background: var(--bg-card); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                                    <div>
+                                        <strong>${r.roomNumber} &bull; ${r.courseCode ? r.courseCode + ' - ' : ''}${r.roomName}</strong>
+                                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Instructor(s): ${facultyNames}</div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <span class="pill pill-green">${enrolledCount} / ${r.capacity} Enrolled</span>
+                                        ${pendingCount > 0 ? `<span class="pill pill-amber">${pendingCount} Pending</span>` : ''}
+                                        <button class="btn btn-secondary btn-sm" onclick="toggleRoomLock('${r.roomNumber}', ${!r.isLocked})">${r.isLocked ? 'Unlock' : 'Lock'}</button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                }
+
+                // 2. Populate Faculty Teaching Portal
+                if (isFaculty || isAdmin) {
+                    const facultyContainer = document.getElementById('facultyClassesContainer');
+                    if (facultyContainer) {
+                        const myClasses = isAdmin 
+                            ? allRoomsCache 
+                            : allRoomsCache.filter(r => (r.assignedFaculty || []).some(f => f.email && f.email.toLowerCase() === userEmail));
+
+                        if (myClasses.length === 0) {
+                            facultyContainer.innerHTML = `
+                                <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+                                    You have not been assigned to any classrooms as an instructor yet.<br>
+                                    <span style="font-size: 12px;">Contact the Campus Administrator to assign you to courses in the Academic Administration panel.</span>
+                                </div>
+                            `;
+                        } else {
+                            facultyContainer.innerHTML = myClasses.map(r => {
+                                const pendingReqs = r.pendingEnrollmentRequests || [];
+                                const enrolled = r.enrolledStudents || [];
+
+                                const pendingRows = pendingReqs.length === 0 
+                                    ? `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); font-size:12px;">No pending student enrollment requests.</td></tr>`
+                                    : pendingReqs.map(req => `
+                                        <tr>
+                                            <td><strong>${req.name || req.email}</strong><div style="font-size:11px; color:var(--text-muted);">${req.email}</div></td>
+                                            <td style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted);">${new Date(req.requestedAt).toLocaleDateString()}</td>
+                                            <td>
+                                                <div style="display: flex; gap: 6px;">
+                                                    <button class="btn btn-primary btn-sm" style="padding: 2px 8px; font-size: 11px;" onclick="approveEnrollment('${r.roomNumber}', '${req.email}')">Approve</button>
+                                                    <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 11px; color: var(--status-red-text);" onclick="rejectEnrollment('${r.roomNumber}', '${req.email}')">Reject</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `).join('');
+
+                                const enrolledPills = enrolled.length === 0
+                                    ? `<span style="color:var(--text-muted); font-size:12px;">No students enrolled yet.</span>`
+                                    : enrolled.map(s => `
+                                        <span class="pill pill-neutral" style="margin: 2px; display: inline-flex; align-items: center; gap: 4px;">
+                                            ${s.name || s.email}
+                                            <a href="javascript:void(0)" onclick="removeStudentFromRoom('${r.roomNumber}', '${s.email}')" style="color:var(--status-red-text); text-decoration:none; margin-left: 2px;" title="Remove student">&times;</a>
+                                        </span>
+                                    `).join('');
+
+                                return `
+                                    <div style="border: 1px solid var(--border-subtle); border-radius: 6px; padding: 18px; margin-bottom: 16px; background: var(--bg-surface);">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                                            <div>
+                                                <span style="font-size: 15px; font-weight: 700;">${r.roomNumber} &bull; ${r.courseCode ? r.courseCode + ' : ' : ''}${r.courseTitle || r.roomName}</span>
+                                                <div style="font-size: 12px; color: var(--text-muted);">${r.building} &bull; Capacity: ${enrolled.length}/${r.capacity} &bull; Clearance: ${r.securityClearance}</div>
+                                            </div>
+                                            <div style="display: flex; gap: 8px; align-items: center;">
+                                                <button class="btn btn-secondary btn-sm" onclick="toggleRoomLock('${r.roomNumber}', ${!r.isLocked})">
+                                                    ${r.isLocked ? 'Unlock Classroom Door' : 'Lock Classroom Door'}
+                                                </button>
+                                                <button class="btn btn-secondary btn-sm" onclick="selectRoomForSwipe('${r.roomNumber}')">
+                                                    Swipe Badge
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Pending Enrollment Requests Table -->
+                                        <div style="margin-top: 10px;">
+                                            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; font-family: var(--font-mono); color: var(--status-amber-text); margin-bottom: 6px;">
+                                                Pending Enrollment Requests (${pendingReqs.length})
+                                            </div>
+                                            <div class="table-responsive" style="margin-bottom: 12px;">
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Student Name / Email</th>
+                                                            <th>Requested Date</th>
+                                                            <th>Review Decision</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        ${pendingRows}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        <!-- Enrolled Roster -->
+                                        <div>
+                                            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; font-family: var(--font-mono); color: var(--text-muted); margin-bottom: 6px;">
+                                                Enrolled Student Roster (${enrolled.length} / ${r.capacity}):
+                                            </div>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                                ${enrolledPills}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        }
+                    }
+                }
+
+                // 3. Populate Student Course Enrollment Table
+                if (isStudent) {
+                    const studentTbody = document.getElementById('studentCoursesTableBody');
+                    if (studentTbody) {
+                        studentTbody.innerHTML = allRoomsCache.map(r => {
+                            const isEnrolled = (r.enrolledStudents || []).some(s => s.email && s.email.toLowerCase() === userEmail);
+                            const isPending = (r.pendingEnrollmentRequests || []).some(req => req.email && req.email.toLowerCase() === userEmail);
+                            const instructor = (r.assignedFaculty || []).map(f => f.name || f.email).join(', ') || 'Staff';
+
+                            let statusBadge = `<span class="pill pill-neutral">Not Enrolled</span>`;
+                            let actionBtn = `<button class="btn btn-primary btn-sm" onclick="requestEnrollment('${r.roomNumber}')">Request to Join</button>`;
+
+                            if (isEnrolled) {
+                                statusBadge = `<span class="pill pill-green">Enrolled &bull; Door Access Granted</span>`;
+                                actionBtn = `<button class="btn btn-secondary btn-sm" onclick="selectRoomForSwipe('${r.roomNumber}')">Select to Swipe</button>`;
+                            } else if (isPending) {
+                                statusBadge = `<span class="pill pill-amber">Pending Instructor Review</span>`;
+                                actionBtn = `<button class="btn btn-secondary btn-sm" disabled style="opacity: 0.6;">Awaiting Approval</button>`;
+                            } else if ((r.enrolledStudents || []).length >= r.capacity) {
+                                statusBadge = `<span class="pill pill-red">Class Full</span>`;
+                                actionBtn = `<button class="btn btn-secondary btn-sm" disabled style="opacity: 0.6;">Full</button>`;
+                            }
+
+                            const lockPill = r.isLocked 
+                                ? `<span class="pill pill-amber">Locked</span>` 
+                                : `<span class="pill pill-green">Unlocked</span>`;
+
+                            return `
+                                <tr>
+                                    <td>
+                                        <strong>${r.roomNumber}</strong> ${r.courseCode ? `<span class="pill pill-neutral">${r.courseCode}</span>` : ''}
+                                        <div style="font-size:11px; color:var(--text-muted);">${r.courseTitle || r.roomName} &bull; ${r.building}</div>
+                                    </td>
+                                    <td>${instructor}</td>
+                                    <td>${(r.enrolledStudents || []).length} / ${r.capacity}</td>
+                                    <td>${lockPill}</td>
+                                    <td>${statusBadge}</td>
+                                    <td>${actionBtn}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
+                }
+
+            } catch (err) {
+                console.error('Error loading classroom data:', err);
+            }
+        }
+
+        // Student: Request Enrollment
+        async function requestEnrollment(roomNumber) {
+            try {
+                const res = await fetch(`/api/rooms/${roomNumber}/request-enrollment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({
+                        email: currentUser.email,
+                        name: currentUser.name
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`Enrollment request submitted for ${roomNumber}! Awaiting faculty approval.`);
+                    await loadClassroomData();
+                    await loadRoomInventory();
+                } else {
+                    alert(`Request failed: ${data.message || res.statusText}`);
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        // Faculty / Admin: Approve Student Enrollment
+        async function approveEnrollment(roomNumber, studentEmail) {
+            try {
+                const res = await fetch(`/api/rooms/${roomNumber}/approve-enrollment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ email: studentEmail })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    await loadClassroomData();
+                    await loadRoomInventory();
+                } else {
+                    alert(`Approval failed: ${data.message || res.statusText}`);
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        // Faculty / Admin: Reject Student Enrollment
+        async function rejectEnrollment(roomNumber, studentEmail) {
+            try {
+                const res = await fetch(`/api/rooms/${roomNumber}/reject-enrollment`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ email: studentEmail })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    await loadClassroomData();
+                } else {
+                    alert(`Rejection failed: ${data.message || res.statusText}`);
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        // Faculty / Admin: Remove Student from Class
+        async function removeStudentFromRoom(roomNumber, studentEmail) {
+            if (!confirm(`Are you sure you want to remove student ${studentEmail} from room ${roomNumber}?`)) return;
+            try {
+                const res = await fetch(`/api/rooms/${roomNumber}/remove-student`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ email: studentEmail })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    await loadClassroomData();
+                    await loadRoomInventory();
+                } else {
+                    alert(`Failed to remove: ${data.message || res.statusText}`);
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        // Admin: Assign Faculty
+        async function handleAssignFaculty() {
+            const roomNum = document.getElementById('assignFacultyRoomSelect').value;
+            const email = document.getElementById('assignFacultyEmail').value.trim();
+            const name = document.getElementById('assignFacultyName').value.trim();
+            const courseCode = document.getElementById('assignCourseCode').value.trim();
+            const courseTitle = document.getElementById('assignCourseTitle').value.trim();
+
+            if (!roomNum || !email) {
+                alert('Room number and faculty email are required.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/rooms/${roomNum}/assign-faculty`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ email, name, courseCode, courseTitle })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`Faculty '${email}' successfully assigned to ${roomNum}!`);
+                    document.getElementById('assignFacultyEmail').value = '';
+                    document.getElementById('assignFacultyName').value = '';
+                    await loadClassroomData();
+                    await loadRoomInventory();
+                } else {
+                    alert(`Assignment failed: ${data.message || res.statusText}`);
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
+            }
+        }
+
+        // Admin: Direct Enroll Student
+        async function handleDirectEnrollStudent() {
+            const roomNum = document.getElementById('directEnrollRoomSelect').value;
+            const email = document.getElementById('directStudentEmail').value.trim();
+            const name = document.getElementById('directStudentName').value.trim();
+
+            if (!roomNum || !email) {
+                alert('Room number and student email are required.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/rooms/${roomNum}/enroll-student`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify({ email, name })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`Student '${email}' directly enrolled in ${roomNum}! Door badge access activated.`);
+                    document.getElementById('directStudentEmail').value = '';
+                    document.getElementById('directStudentName').value = '';
+                    await loadClassroomData();
+                    await loadRoomInventory();
+                } else {
+                    alert(`Enrollment failed: ${data.message || res.statusText}`);
+                }
+            } catch (err) {
+                alert(`Error: ${err.message}`);
             }
         }
 

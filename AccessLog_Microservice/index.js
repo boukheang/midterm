@@ -68,10 +68,18 @@ app.post('/api/logs/swipe', async (req, res) => {
         let status = 'GRANTED';
         let denialReason = null;
 
+        const cleanRoomLookup = (roomNumber || roomId || '').toString().replace(/^:/, '').trim().toUpperCase();
+
         // 1. Check Room status directly from database
+        let room = null;
         try {
-            const room = await db.connection.collection('rooms').findOne({
-                $or: [{ roomNumber: normalizedRoomNumber }, { _id: cleanRoomId }]
+            room = await db.connection.collection('rooms').findOne({
+                $or: [
+                    { roomNumber: normalizedRoomNumber },
+                    { roomNumber: cleanRoomLookup },
+                    { _id: cleanRoomId },
+                    { _id: cleanRoomLookup }
+                ]
             });
 
             if (room) {
@@ -87,63 +95,106 @@ app.post('/api/logs/swipe', async (req, res) => {
             console.warn(`[${INSTANCE_NAME}] Warning reading rooms collection:`, dbErr.message);
         }
 
-        // 2. If not already denied, check User Permissions
+        // 2. If not already denied, check Role, Classroom Enrollment, and Permissions
         if (status === 'GRANTED') {
             if (userRole === 'admin') {
                 // Admins have master access override
                 status = 'GRANTED';
                 denialReason = null;
             } else {
-                try {
-                    const permission = await db.connection.collection('access_permissions').findOne({
-                        $or: [
-                            { userEmail: normalizedEmail, roomNumber: normalizedRoomNumber },
-                            { userId: cleanUserId, roomId: cleanRoomId },
-                            { userEmail: normalizedEmail, roomId: cleanRoomId }
-                        ],
-                        isActive: true
-                    });
+                let accessAllowed = false;
 
-                    if (!permission) {
-                        status = 'DENIED';
-                        denialReason = 'NO_PERMISSION_GRANTED';
-                    } else {
-                        const now = new Date();
+                // A. Check Classroom Faculty Assignment (Teachers have access to their rooms)
+                if (userRole === 'faculty' && room && Array.isArray(room.assignedFaculty)) {
+                    const isAssigned = room.assignedFaculty.some(f => 
+                        (f.email && f.email.toLowerCase() === normalizedEmail) ||
+                        (f.name && f.name.toLowerCase() === cleanUserId.toLowerCase())
+                    );
+                    if (isAssigned) {
+                        accessAllowed = true;
+                        status = 'GRANTED';
+                        denialReason = null;
+                    }
+                }
 
-                        // Check Expiration
-                        if (permission.validUntil && now > new Date(permission.validUntil)) {
-                            status = 'DENIED';
-                            denialReason = 'PERMISSION_EXPIRED';
-                        } else {
-                            // Check Day of Week
-                            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                            const currentDay = days[now.getDay()];
+                // B. Check Classroom Student Enrollment (Enrolled students have access to their rooms)
+                if (!accessAllowed && userRole === 'student' && room && Array.isArray(room.enrolledStudents)) {
+                    const isEnrolled = room.enrolledStudents.some(s => 
+                        (s.email && s.email.toLowerCase() === normalizedEmail) ||
+                        (s.name && s.name.toLowerCase() === cleanUserId.toLowerCase())
+                    );
+                    if (isEnrolled) {
+                        accessAllowed = true;
+                        status = 'GRANTED';
+                        denialReason = null;
+                    }
+                }
 
-                            if (Array.isArray(permission.allowedDays) && permission.allowedDays.length > 0) {
-                                const dayMatch = permission.allowedDays.some(d => d.toLowerCase() === currentDay.toLowerCase());
-                                if (!dayMatch) {
-                                    status = 'DENIED';
-                                    denialReason = `OUTSIDE_ALLOWED_DAYS_${currentDay.toUpperCase()}`;
+                // C. Check Explicit Access Permission Document
+                if (!accessAllowed) {
+                    try {
+                        const permission = await db.connection.collection('access_permissions').findOne({
+                            $or: [
+                                { userEmail: normalizedEmail, roomNumber: normalizedRoomNumber },
+                                { userId: cleanUserId, roomId: cleanRoomId },
+                                { userEmail: normalizedEmail, roomId: cleanRoomId },
+                                { userEmail: normalizedEmail, roomNumber: cleanRoomLookup }
+                            ],
+                            isActive: true
+                        });
+
+                        if (permission) {
+                            const now = new Date();
+
+                            // Check Expiration
+                            if (permission.validUntil && now > new Date(permission.validUntil)) {
+                                status = 'DENIED';
+                                denialReason = 'PERMISSION_EXPIRED';
+                            } else {
+                                // Check Day of Week
+                                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                const currentDay = days[now.getDay()];
+
+                                if (Array.isArray(permission.allowedDays) && permission.allowedDays.length > 0) {
+                                    const dayMatch = permission.allowedDays.some(d => d.toLowerCase() === currentDay.toLowerCase());
+                                    if (!dayMatch) {
+                                        status = 'DENIED';
+                                        denialReason = `OUTSIDE_ALLOWED_DAYS_${currentDay.toUpperCase()}`;
+                                    }
+                                }
+
+                                // Check Time Range
+                                if (status === 'GRANTED' && permission.startTime && permission.endTime) {
+                                    const currentHour = now.getHours().toString().padStart(2, '0');
+                                    const currentMin = now.getMinutes().toString().padStart(2, '0');
+                                    const currentTimeStr = `${currentHour}:${currentMin}`;
+
+                                    if (currentTimeStr < permission.startTime || currentTimeStr > permission.endTime) {
+                                        status = 'DENIED';
+                                        denialReason = `OUTSIDE_SCHEDULED_HOURS_${currentTimeStr}`;
+                                    }
+                                }
+
+                                if (status === 'GRANTED') {
+                                    accessAllowed = true;
                                 }
                             }
-
-                            // Check Time Range
-                            if (status === 'GRANTED' && permission.startTime && permission.endTime) {
-                                const currentHour = now.getHours().toString().padStart(2, '0');
-                                const currentMin = now.getMinutes().toString().padStart(2, '0');
-                                const currentTimeStr = `${currentHour}:${currentMin}`;
-
-                                if (currentTimeStr < permission.startTime || currentTimeStr > permission.endTime) {
-                                    status = 'DENIED';
-                                    denialReason = `OUTSIDE_SCHEDULED_HOURS_${currentTimeStr}`;
-                                }
+                        } else {
+                            // D. General clearance room without active restrictions allows access
+                            if (room && room.securityClearance === 'GENERAL' && (!room.assignedFaculty || room.assignedFaculty.length === 0)) {
+                                accessAllowed = true;
+                                status = 'GRANTED';
+                                denialReason = null;
+                            } else {
+                                status = 'DENIED';
+                                denialReason = userRole === 'student' ? 'STUDENT_NOT_ENROLLED_IN_CLASS' : 'FACULTY_NOT_ASSIGNED_TO_ROOM';
                             }
                         }
+                    } catch (permErr) {
+                        console.warn(`[${INSTANCE_NAME}] Warning checking permissions:`, permErr.message);
+                        status = 'DENIED';
+                        denialReason = 'PERMISSION_CHECK_ERROR';
                     }
-                } catch (permErr) {
-                    console.warn(`[${INSTANCE_NAME}] Warning checking permissions:`, permErr.message);
-                    status = 'DENIED';
-                    denialReason = 'PERMISSION_CHECK_ERROR';
                 }
             }
         }
