@@ -6,7 +6,7 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRETE || 'CampusSecuritySuperSecretKey2026!#@';
+const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRETE || 'dev-only-change-this-secret-before-deployment';
 const PORT = process.env.PORT || 5002;
 
 const db = require('./dbconnect.js');

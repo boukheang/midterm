@@ -8,7 +8,7 @@ Midterm project implementing a containerized microservices architecture with an 
 
 | Service                           |   Port   | Description                                                         | Responsibility |
 | --------------------------------- | :-------: | ------------------------------------------------------------------- | -------------- |
-| **MongoDB**                 | `27017` | Persistent Database Layer                                           | Shared Storage |
+| **MongoDB**                 | `27017` (loopback only) | Persistent Database Layer                                           | Shared Storage |
 | **API Gateway**             | `4000` | Gateway & Reverse Proxy, Round-Robin Load Balancer, Live UI Console | Common Layer   |
 | **Registration Service**    | `5001` | User Account Registration & Card Provisioning                       | Common Layer   |
 | **Authentication Service**  | `5002` | JWT Token Issuance & Credential Verification                        | Common Layer   |
@@ -17,29 +17,33 @@ Midterm project implementing a containerized microservices architecture with an 
 | **Access Log - Instance 1** | `5005` | High-Concurrency Door Swipe & Audit Logging (Replica 1)             | Team Member 2  |
 | **Access Log - Instance 2** | `5015` | High-Concurrency Door Swipe & Audit Logging (Replica 2)             | Team Member 2  |
 | **Emergency Alert Service** | `5006` | Campus-Wide Lockdown Enforcement & Security Incident Reporting      | Team Member 2  |
+| **Student Service** | `5007` | Student management | Common Layer |
+| **Teacher Service** | `5008` | Teacher management | Common Layer |
 
 ---
 
 ## 2. Quick Start Guide for Group Members
 
-### Step 1: Start All Services
+### Step 1: Configure and Start All Services
+
+Docker Compose uses the bundled MongoDB container by default. You do not need MongoDB Atlas credentials or AWS Academy access keys just to run the application.
+
+Optional: copy `.env.example` to `.env` and replace `JWT_SECRET` with a long random value before sharing or deploying publicly. The built-in default is for development only.
 
 From the project root directory, run:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-*(On Windows, if your terminal prompts to pick an app for Docker, run `docker.exe compose up -d`)*.
-
-### Step 2: Verify All 9 Containers are Healthy
+### Step 2: Verify All 11 Containers
 
 ```bash
 docker compose ps
+docker compose logs --tail=100
 ```
 
-All 9 containers should show `Up` and `(healthy)`.
-
+Wait for the API Gateway and upstream services to become healthy. If a service is restarting or unhealthy, inspect it with `docker compose logs <service_name>`.
 ---
 
 ## 3. How to Test the Project
@@ -100,3 +104,18 @@ Refer to **[`test.md`](./test.md)** for the complete list of endpoints, JSON pay
   ```bash
   docker compose up -d --build
   ```
+
+
+## 5. EC2 Deployment Notes
+
+- Install Docker Engine and the Docker Compose plugin on the EC2 instance, then copy/clone this project.
+- Run `docker compose up -d --build` from the directory containing `docker-compose.yml`.
+- In the EC2 security group, allow inbound TCP `4000` only from the IPs that need the demo (or use a reverse proxy on `80/443`). Allow SSH `22` only from your trusted IP. Do not open ports `27017` or `5001`–`5015` publicly.
+- Only the gateway is published on all host interfaces. MongoDB and service ports are bound to `127.0.0.1` for local diagnostics; internal service-to-service traffic uses Docker DNS names.
+- Browse to `http://<EC2-PUBLIC-IP>:4000/`, not `http://localhost:4000/` on your own computer. Ensure the EC2 security group and host firewall allow the chosen gateway port.
+- An AWS Academy access key is not required by this Compose application. AWS Academy temporary credentials may be needed to create/manage AWS resources via the console, CLI, or SDK. SSH access uses the EC2 key pair or another configured SSH method, not the AWS API access key.
+- The default MongoDB data is stored in the named Docker volume `mongodb_data`. Back it up before deleting volumes.
+
+## 6. Known Limits
+
+This package can be statically checked here, but it was not possible to run a real Docker build or end-to-end container test in this environment because Docker Engine is unavailable. Verify on your machine with the commands above before submitting.
