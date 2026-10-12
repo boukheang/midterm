@@ -1,6 +1,6 @@
 # Team Project Notes: Bugs Fixed & Architecture Improvements
 
-> **Summary for Team Members**:  
+> **Summary for Team Members**:
 > This note documents all the bugs, configuration traps, and enhancements made to the original midterm project codebase to ensure it builds cleanly on Docker, runs without connection errors on any machine (Local & AWS EC2), passes 100% of test cases in `test.md`, and includes a clean live demonstration interface.
 
 ---
@@ -8,6 +8,7 @@
 ## 1. Critical Bug Fixes (Docker & Database Networking)
 
 ### 🚨 Fix 1.1: Docker Compose MongoDB Fallback Connection String
+
 * **The Original Code**:
   In `docker-compose.yml`, services used:
   ```yaml
@@ -23,11 +24,13 @@
   ```yaml
   MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
   ```
+
   and created a root `.env` file. Now all containers automatically resolve MongoDB via Docker DNS out-of-the-box.
 
 ---
 
 ### 🚨 Fix 1.2: Container Startup Race Condition (`depends_on: mongodb`)
+
 * **The Original Code**:
   Backend services (`registration_service`, `auth_service`, `room_service`, `permission_service`, `accesslog_service_1`, `accesslog_service_2`, `emergency_service`) did not have `depends_on: - mongodb`.
 * **The Bug**:
@@ -38,6 +41,7 @@
 ---
 
 ### 🚨 Fix 1.3: Removed Obsolete Docker Compose `version: '3.8'`
+
 * **The Original Code**:
   Line 1 of `docker-compose.yml` declared `version: '3.8'`.
 * **The Issue**:
@@ -51,6 +55,7 @@
 ---
 
 ### 🚨 Fix 1.4: Invalid MongoDB Atlas Placeholders in Local `.env` Files
+
 * **The Original Code**:
   All 6 microservice `.env` files contained:
   ```env
@@ -66,6 +71,7 @@
 ## 2. API Gateway & Live Demonstration Console
 
 ### 🖥️ Feature 2.1: Embedded Live Demo Web Console (`http://localhost:4000/`)
+
 * **Why it was added**:
   Presenting raw JSON responses in Postman during a live midterm demo can be dry. We added a lightweight, single-page executive console served directly by the existing `APIGateway_Microservice`:
   - **Zero extra packages & zero extra Docker containers**.
@@ -77,6 +83,7 @@
 ---
 
 ### 🔧 Fix 2.2: Dynamic Target Room Dropdown Syncing
+
 * **The Issue**:
   The Target Room dropdown in the swipe simulator initially had only 3 hardcoded rooms. When a new room was created in the database, it showed in the table but not in the swipe selector.
 * **The Solution**:
@@ -85,6 +92,7 @@
 ---
 
 ### 💡 Clarification & Feature 2.3: Visual Door Solenoid / Deadbolt Feedback
+
 * **How Locking Works in this Architecture**:
   - **When a room is UNLOCKED (`isLocked: false`)**: Swiping a card returns `GRANTED`, and the electronic solenoid unlocks the door.
   - **When a room is LOCKED (`isLocked: true`)**: A professor or admin manually locked the room (`PATCH /api/rooms/:id/toggle-lock`). Swiping a badge returns `DENIED` with reason `ROOM_PHYSICALLY_LOCKED`. The solenoid remains deadbolted.
@@ -117,101 +125,9 @@ docker compose up -d
 # Check health of all containers
 docker compose ps
 
+# Run the 19-point automated test suite
+node run_tests.js
 
-## 5. Cloud Database Migration (MongoDB Atlas)
-
-All microservices now connect to the cloud MongoDB Atlas replica set (`clusterdb`):
-- **Atlas URI**: Configured across root `.env`, all 6 microservice `.env` files, and `docker-compose.yml`.
-
-## 6. Authentication-First Flow & Role-Based UI (RBAC)
-
-1. **Authentication Gate**:
-   - Unauthenticated visitors are now shown a dedicated **Sign In Screen** first instead of directly exposing the control system.
-   - Separate **Register Screen** accessible via a toggle link ("Don't have an account? Register here"), keeping Login and Register clean, focused, and distinct.
-   - Includes one-click quick demo buttons (`[Admin]`, `[Faculty]`, `[Student]`) for rapid evaluation and testing.
-
-2. **Role-Based Access Control in the UI**:
-   - **Student / Faculty**:
-     - Cannot see or use the **Quick Create Room** form (hidden from UI).
-     - Cannot see or trigger **Emergency Lockdown** action buttons (shows "Admin Clearance Required").
-     - Cannot click lock/unlock on campus rooms; the Action column displays `<span class="pill pill-neutral">Read Only</span>`.
-   - **Admin**:
-     - Full management access: can create rooms, lock/unlock rooms, and trigger campus-wide lockdowns.
-   - **Sign Out**:
-     - Added a clean **Sign Out** button in the top navigation bar and session banner to return to the login gate at any time.
-
-3. **Clean Session Isolation**:
-   - Removed in-session role switcher buttons (`Switch: Admin`, `Switch: Faculty`, `Switch: Student`) to maintain strict session integrity. To change roles or accounts, users must legitimately sign out and sign in.
-   - Restricted the `Run test.md Verification` button and Automated Verification Suite Terminal strictly to `admin` users; students and faculty only see their appropriate workspace.
-
-## 7. Ready-to-Use Postman Suite
-
-Created official, importable Postman files at the root of the repository:
-- `postman_collection.json`: Complete Postman v2.1.0 collection with all 5 test folders from `test.md`. Contains pre-configured tests that automatically capture JWT tokens on Login (`adminToken`, `studentToken`, `facultyToken`) and feed them into protected requests.
-- `postman_environment.json`: Postman environment with `baseUrl` (`http://localhost:4000`), switchable to EC2 public IP for cloud grading.
-
-## 8. Midterm Presentation Deck (.pptx)
-
-Created an enterprise-grade 10-slide widescreen (16:9) presentation file for project defense and live demonstration:
-- **File**: `Smart_Campus_Access_Control_Presentation.pptx`
-- **Generator**: `generate_deck.py`
-- **Design Theme**: Modern dark slate (`#0F172A`) with sky cyan & royal blue highlights, structured card layouts, service topology tables, and clean typography. No AI tropes or emojis.
-- **Slide Breakdown**:
-  1. Title & System Overview
-  2. 9-Container High-Level Architecture Topology
-  3. Microservices Matrix & Port Mapping (Ports 4000 to 5015)
-  4. Round-Robin Load Balancing Mechanism & Header Inspection Evidence
-  5. Security & RBAC Enforcement (Clearance Matrix & Negative Tests 4.1-4.4)
-  6. MongoDB Atlas Cloud Database Migration & Live Data Sync
-  7. Incident Response: Campus-Wide Emergency Lockdown System
-  8. Interactive Web Console UX & Demonstration Components
-  9. Turnkey Postman Suite & 18/18 Automated Test Results
-  10. Key Engineering Takeaways & Step-by-Step Live Demo Checklist
-
----
-
-## 9. Universal Room Identifier Resolver (Postman `:ENG-301` Fix)
-
-* **The Issue**:
-  When testing in Postman, URLs containing variable placeholders or paths like `http://localhost:4000/api/rooms/:ENG-301` resulted in:
-  ```json
-  {
-    "success": false,
-    "message": "Room ':ENG-301' not found."
-  }
-  ```
-  The database stored `ENG-301`, but Express received `:ENG-301` literally.
-* **The Solution**:
-  Implemented a universal identifier sanitizer `resolveRoomQuery(param)` across all room routes in `Room_Microservice/index.js` and `AccessLog_Microservice/index.js`.
-  It automatically strips leading colons, trims whitespace, and matches against `_id`, `roomNumber`, and uppercase forms, allowing both `ENG-301` and `:ENG-301` to resolve with 100% reliability.
-
----
-
-## 10. Academic Classroom Management & Role Specialization
-
-Transformed generic room cards into an active, role-aware Academic Classroom & Course Management system:
-
-1. **Role Hierarchy**:
-   * **Admin (Campus Security & Academic Registrar)**:
-     * Full master clearance across the entire campus.
-     * Can assign/remove faculty instructors to any classroom (`POST /api/rooms/:id/assign-faculty`).
-     * Direct student enrollment override (`POST /api/rooms/:id/enroll-student`).
-     * Emergency campus lockdown controls.
-   * **Faculty (Course Instructors)**:
-     * Special teaching privileges:
-     * Access to a dedicated **Faculty Teaching Portal** displaying their assigned classes, course codes, and live student rosters.
-     * Ability to lock/unlock **their assigned classrooms** directly (`PATCH /api/rooms/:id/toggle-lock`). Non-assigned faculty attempting to toggle another teacher's room are rejected with `403 Forbidden`.
-     * Student enrollment review: view pending student requests and one-click **Approve** or **Reject** students (`POST /approve-enrollment`, `POST /reject-enrollment`).
-     * Removal of students from active rosters (`POST /remove-student`).
-     * Automatic NFC door badge access to their assigned teaching rooms.
-   * **Student**:
-     * Access to the **Student Course Enrollment Portal** listing available courses, professors, capacities, and live door lock states.
-     * Can submit enrollment requests to join classes (`POST /api/rooms/:id/request-enrollment`).
-     * Status indicator: `Not Enrolled` &rarr; `Pending Instructor Review` &rarr; `Enrolled • Door Access Granted`.
-     * Door badge swipe is granted upon faculty approval, activating immediate electronic door entry.
-
-2. **Access Log & Door Solenoid Integration**:
-   * Door badge swipe (`POST /api/logs/swipe`) verifies room status and checks if the swiping faculty is assigned to the room or if the swiping student is actively enrolled.
-   * Enrolled students and assigned faculty receive `accessDecision: 'GRANTED'` and `doorUnlocked: true`.
-   * Unassigned faculty or non-enrolled students receive `accessDecision: 'DENIED'` (`STUDENT_NOT_ENROLLED_IN_CLASS`).
-
+# Open the live console in your browser
+http://localhost:4000/
+```

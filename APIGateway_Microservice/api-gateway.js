@@ -22,6 +22,8 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:5002'
 const ROOM_SERVICE_URL = process.env.ROOM_SERVICE_URL || 'http://localhost:5003';
 const PERM_SERVICE_URL = process.env.PERMISSION_SERVICE_URL || 'http://localhost:5004';
 const EMERGENCY_SERVICE_URL = process.env.EMERGENCY_SERVICE_URL || 'http://localhost:5006';
+const STUDENT_SERVICE_URL = process.env.STUDENT_SERVICE_URL || 'http://localhost:5007';
+const TEACHER_SERVICE_URL = process.env.TEACHER_SERVICE_URL || 'http://localhost:5008';
 
 // Initialize Load Balancer for high-concurrency Access Log & Door Swipe Service
 const accessLogLoadBalancer = new RoundRobinLoadBalancer('AccessLogService', [
@@ -191,34 +193,17 @@ app.use(['/login', '/api/auth/login', '/api/auth/verify'], (req, res) => {
 // MEMBER 1 MICROSERVICES: ROOM & PERMISSION MANAGEMENT
 // ====================================================================
 
-// Room Management & Classroom Enrollment Routes
-// Student enrollment request -> Student, Faculty, Admin
-// Faculty approve/reject/remove student -> Faculty, Admin
+// Room Management Routes
+// Write (POST, PUT, DELETE) -> Admin only
 // Lock Toggle (PATCH) -> Admin, Faculty
-// General Write (Create Room, Assign Faculty, Direct Enroll, PUT, DELETE) -> Admin only
 // Read (GET) -> Admin, Faculty, Student
 app.use('/api/rooms', authToken, (req, res, next) => {
-    const url = req.originalUrl || req.url || '';
-
-    if (req.method === 'POST') {
-        if (url.includes('/request-enrollment')) {
-            return authRole(['student', 'faculty', 'admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
-        }
-        if (url.includes('/approve-enrollment') || url.includes('/reject-enrollment') || url.includes('/remove-student')) {
-            return authRole(['faculty', 'admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
-        }
-        // Other POST requests (create room, assign-faculty, enroll-student) -> Admin only
+    if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
         return authRole(['admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
     }
-
     if (req.method === 'PATCH') {
         return authRole(['admin', 'faculty'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
     }
-
-    if (['PUT', 'DELETE'].includes(req.method)) {
-        return authRole(['admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
-    }
-
     // GET requests
     return authRole(['admin', 'faculty', 'student'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
 });
@@ -234,7 +219,23 @@ app.use('/api/permissions', authToken, (req, res, next) => {
         return authRole(['admin'])(req, res, () => forward(req, res, PERM_SERVICE_URL));
     }
     // GET /user/:id or general queries
-    return authRole(['admin', 'faculty', 'student'])(req, res, () => forward(req, res, PERM_SERVICE_URL));
+    return authRole(['admin'])(req, res, () => forward(req, res, PERM_SERVICE_URL));
+});
+
+// ====================================================================
+// STUDENT & TEACHER MANAGEMENT MICROSERVICES
+// ====================================================================
+
+// Student Management Routes
+app.use('/api/students', authToken, authRole(['admin', 'student']), (req, res) => {
+    console.log('[API Gateway] Routing to Student Management Service');
+    forward(req, res, STUDENT_SERVICE_URL);
+});
+
+// Teacher Management Routes
+app.use('/api/teachers', authToken, authRole(['admin', 'faculty']), (req, res) => {
+    console.log('[API Gateway] Routing to Teacher Management Service');
+    forward(req, res, TEACHER_SERVICE_URL);
 });
 
 // ====================================================================

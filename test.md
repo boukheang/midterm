@@ -1,6 +1,7 @@
 # API Testing Guide (Postman & Manual Testing)
 
 > **Base URL**:
+>
 > - Local Testing: `http://localhost:4000`
 > - EC2 Deployment: `http://<EC2_PUBLIC_IP>:4000`
 
@@ -73,6 +74,7 @@
     }
   }
   ```
+
 > 📌 **Note**: Copy the returned `token` string for the protected requests below!
 
 ---
@@ -116,12 +118,256 @@
     }
   }
   ```
+# Permission Microservice(Admin only)
+## 1. grant permission to student/faculty
+  **Method**: `POST`
+- **URL**: `http://localhost:4000/api/permissions/grant`
+- **Headers**:
 
+  ```http
+  Authorization: Bearer <PASTE_YOUR_TOKEN_HERE>
+  ```
+
+- **Body (raw JSON)**:
+  ```json
+  { "userId":"USR-18738098",
+    "userEmail":"eng@campus.edu",
+    "userRole":"student",
+    "roomId":"ROOM-3164886",
+    "roomNumber":"ENG-301",
+    "allowedDays":[
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+    ],
+    "startTime":"08:00",
+    "endTime":"20:00"}
+  ```
+  ```json
+  {   "userId":"USR-77022442",
+    "userEmail":"student@campus.edu",
+    "userRole":"student",
+    "roomId":"ROOM-3164886",
+    "roomNumber":"ENG-301",
+    "allowedDays":[
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+    ],
+    "startTime":"08:00",
+    "endTime":"20:00"}
+  ```
+
+- **Expected Status**: `201 CREATE`
+- **Expected Response**:
+# Student Management Microservice
+
+## 1. Get Student Information (With Token)
+
+- **Method**: `GET`
+- **URL**: `http://localhost:4000/api/students/user_info`
+- **Headers**:
+
+  ```http
+  Authorization: Bearer <PASTE_YOUR_TOKEN_HERE>
+  ```
+
+- **Body**: None
+- **Expected Status**: `200 OK`
+- **Expected Response**:
+
+  ```json
+  {
+    "success": true,
+    "user": {
+      "_id": "STUDENT-xxxx",
+      "name": "John Doe",
+      "email": "student@example.com",
+      "phone": "0123456789"
+    }
+  }
+  ```
+
+## 2. Update Student Information (With Token)
+
+- **Method**: `PUT`
+- **URL**: `http://localhost:4000/api/students/update_info`
+- **Headers**:
+
+  ```http
+  Content-Type: application/json
+  Authorization: Bearer <PASTE_YOUR_TOKEN_HERE>
+  ```
+
+- **Body (raw JSON)**:
+
+  ```json
+    {"name":"Alex", 
+    "password":"12345674354",
+    "phone":"098766323554"}
+  ```
+
+- **Expected Status**: `200 OK`
+- **Expected Response**:
+
+  ```json
+  {
+    "success": true,
+    "message": "User information updated successfully",
+    "user": {
+      "_id": "STUDENT-xxxx",
+      "name":"Alex", 
+      "password":"12345674354",
+      "phone":"098766323554"
+    }
+  }
+  ```
+
+## 3. Get Student Room Schedule (With Token)
+
+- **Method**: `GET`
+- **URL**: `http://localhost:4000/api/students/room_schedule`
+- **Headers**:
+
+  ```http
+  Authorization: Bearer <PASTE_YOUR_TOKEN_HERE>
+  ```
+
+- **Body**: None
+- **Expected Status**: `200 OK`
+- **Expected Response**:
+
+  ```json
+  {
+    "success": true,
+    "count": 1,
+    "schedules": [
+      {
+        "roomId": "ROOM-xxxx",
+        "roomNumber": "ENG-301",
+        "allowedDays": ["Monday", "Wednesday"],
+        "startTime": "08:00",
+        "endTime": "10:00",
+        "validFrom": "2026-10-01",
+        "validUntil": "2026-12-31",
+        "isActive": true
+      }
+    ]
+  }
+  ```
+
+---
+
+# Teacher Management Microservice
+
+## 1. Get Teacher Information (With Token)
+
+- **Method**: `GET`
+- **URL**: `http://localhost:4000/api/teachers/user_info`
+- **Headers**:
+
+  ```http
+  Authorization: Bearer <PASTE_YOUR_TOKEN_HERE>
+  ```
+
+- **Body**: None
+- **Expected Status**: `200 OK`
+- **Expected Response**:
+
+  ```json
+  {
+    "success": true,
+    "user": {
+      "_id": "TEACHER-xxxx",
+      "name": "Jane Smith",
+      "email": "teacher@example.com",
+      "phone": "0123456789"
+    }
+  }
+  ```
+
+## 2. Update Teacher Information (With Token)
+
+- **Method**: `PUT`
+- **URL**: `http://localhost:4000/api/teachers/update_info`
+- **Headers**:
+
+  ```http
+  Content-Type: application/json
+  Authorization: Bearer <PASTE_YOUR_TOKEN_HERE>
+  ```
+
+- **Body (raw JSON)**:
+
+  ```json
+  {
+    "name": "Jane Smith Updated",
+    "phone": "0987654321"
+  }
+  ```
+
+- **Expected Status**: `200 OK`
+- **Expected Response**:
+
+  ```json
+  {
+    "success": true,
+    "message": "User information updated successfully",
+    "user": {
+      "_id": "TEACHER-xxxx",
+      "name": "Jane Smith Updated",
+      "email": "teacher@example.com",
+      "phone": "0987654321"
+    }
+  }
+  ```
+
+## 3. Get Teacher Room Schedule (With Token)
+
+- **Method**: `GET`
+- **URL**: `http://localhost:4000/api/teachers/room_schedule`
+- **Headers**:
+
+  ```http
+  Authorization: Bearer <PASTE_YOUR_TOKEN_HERE>
+  ```
+
+- **Body**: None
+- **Expected Status**: `200 OK`
+- **Expected Response**:
+
+  ```json
+  {
+    "success": true,
+    "count": 1,
+    "schedules": [
+      {
+        "roomId": "ROOM-xxxx",
+        "roomNumber": "ENG-301",
+        "allowedDays": ["Monday", "Wednesday"],
+        "startTime": "08:00",
+        "endTime": "10:00",
+        "validFrom": "2026-10-01",
+        "validUntil": "2026-12-31",
+        "isActive": true
+      }
+    ]
+  }
+  ```
+
+---
+
+**Note:** The example response fields and status codes are illustrative. Verify them against your actual Student and Teacher microservice routes and schemas.
 ---
 
 ## 4. Test Negative Cases (Required Assignment Screenshots)
 
 ### 4.1 Wrong Password
+
 - **Method**: `POST`
 - **URL**: `http://localhost:4000/login`
 - **Headers**: `Content-Type: application/json`
@@ -145,6 +391,7 @@
 ---
 
 ### 4.2 Missing Token
+
 - **Method**: `GET`
 - **URL**: `http://localhost:4000/api/rooms`
 - **Headers**: *(Do NOT provide Authorization header)*
@@ -161,6 +408,7 @@
 ---
 
 ### 4.3 Invalid / Tampered Token
+
 - **Method**: `GET`
 - **URL**: `http://localhost:4000/api/rooms`
 - **Headers**:
@@ -180,6 +428,7 @@
 ---
 
 ### 4.4 Unauthorized Role (Role-Based Access Control)
+
 1. Register and login as a `student`:
    - `POST http://localhost:4000/reg` with `"role": "student"`
    - `POST http://localhost:4000/login` to get the student token.
@@ -199,6 +448,7 @@
        "building": "Engineering Hall"
      }
      ```
+
 - **Expected Status**: `403 Forbidden`
 - **Expected Response**:
   ```json
@@ -214,6 +464,7 @@
 ## 5. Test Door Badge Swipe & Load Balancing
 
 ### 5.1 Door Badge Swipe Simulation
+
 - **Method**: `POST`
 - **URL**: `http://localhost:4000/api/logs/swipe`
 - **Headers**:
@@ -247,6 +498,7 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
 - **EC2 Deployment URL**: `http://<EC2_PUBLIC_IP>:4000/`
 
 ### 6.1 Testing the Round-Robin Load Balancer Visually
+
 1. Open `http://localhost:4000/` in your browser.
 2. Under **Door Badge Swipe & Round-Robin Load Balancer**:
    - Select a room from the **Target Room** dropdown (e.g. `ENG-301`).
@@ -261,6 +513,7 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
      - Status code and response latency.
 
 ### 6.2 Testing Room Management & Lock Control
+
 1. In the **Campus Room Management** table on the right:
    - Click the **"Lock"** button on any room (e.g., `ENG-146`). The room status changes to `LOCKED`.
 2. Go back to the swipe simulator, select that locked room, and click **"Swipe Badge (Single)"**.
@@ -273,6 +526,7 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
    - The new room appears in both the management table and the Target Room dropdown.
 
 ### 6.3 Testing Campus Emergency Lockdown
+
 1. In the top emergency banner, click **"Activate Campus Lockdown"**.
 2. **What to Observe**:
    - The banner turns red: `CAMPUS LOCKDOWN ACTIVE`.
@@ -281,6 +535,6 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
 3. Click **"Lift Lockdown"** to restore standard security policies.
 
 ### 6.4 One-Click Automated Verification
+
 1. Click the blue **"Run test.md Verification"** button in the top session bar.
 2. The verification terminal runs all 5 test sections live and displays a green `ALL CHECKS PASSED (100%)` badge.
-
