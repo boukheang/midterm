@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 // Database Connection URL
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/smart_campus_access_db";
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0";
 
 const clientOptions = {
     serverSelectionTimeoutMS: 5000,
