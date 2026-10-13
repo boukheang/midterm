@@ -1,42 +1,190 @@
-# Smart Campus Access Control - Docker Compose deployment
-# Only the API Gateway is exposed publicly by default.
+# Smart Campus Access Control
+# Local-safe defaults: only localhost can reach published ports.
+# MongoDB data persists in the named mongodb_data volume.
+
 networks:
   campus_network:
     driver: bridge
+
 volumes:
   mongodb_data:
     driver: local
+
+# Shared settings keep service definitions concise and consistent.
+x-node-service: &node-service
+  restart: unless-stopped
+  networks:
+    - campus_network
+
+x-node-environment: &node-environment
+  MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
+  JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
+
+x-node-healthcheck: &node-healthcheck
+  test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:$${PORT}/health || exit 1"]
+  interval: 30s
+  timeout: 5s
+  retries: 3
+  start_period: 15s
+
 services:
   mongodb:
     image: mongo:7.0
     container_name: campus_mongodb
-    restart: always
+    restart: unless-stopped
+    # Keep MongoDB private to the host; app containers use mongodb:27017.
     ports:
-    - 127.0.0.1:27017:27017
+      - "127.0.0.1:27017:27017"
     volumes:
-    - mongodb_data:/data/db
+      - mongodb_data:/data/db
     networks:
-    - campus_network
+      - campus_network
     healthcheck:
-      test:
-      - CMD
-      - mongosh
-      - --eval
-      - db.adminCommand('ping')
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 20s
-  api_gateway:
-    build:
-      context: ./APIGateway_Microservice
-      dockerfile: Dockerfile
-    container_name: campus_api_gateway
-    restart: always
+
+  registration_service:
+    <<: *node-service
+    build: ./Registration_Microservice
+    container_name: campus_registration_service
     ports:
-    - 4000:4000
+      - "127.0.0.1:5001:5001"
     environment:
-      PORT: '4000'
+      <<: *node-environment
+      PORT: "5001"
+      DEMO_MODE: ${DEMO_MODE:-true}
+    healthcheck: *node-healthcheck
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  auth_service:
+    <<: *node-service
+    build: ./Authentication_Microservice
+    container_name: campus_auth_service
+    ports:
+      - "127.0.0.1:5002:5002"
+    environment:
+      <<: *node-environment
+      PORT: "5002"
+    healthcheck: *node-healthcheck
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  room_service:
+    <<: *node-service
+    build: ./Room_Microservice
+    container_name: campus_room_service
+    ports:
+      - "127.0.0.1:5003:5003"
+    environment:
+      <<: *node-environment
+      PORT: "5003"
+    healthcheck: *node-healthcheck
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  permission_service:
+    <<: *node-service
+    build: ./Permission_Microservice
+    container_name: campus_permission_service
+    ports:
+      - "127.0.0.1:5004:5004"
+    environment:
+      <<: *node-environment
+      PORT: "5004"
+    healthcheck: *node-healthcheck
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  accesslog_service_1:
+    <<: *node-service
+    build: ./AccessLog_Microservice
+    container_name: campus_accesslog_service_1
+    ports:
+      - "127.0.0.1:5005:5005"
+    environment:
+      <<: *node-environment
+      PORT: "5005"
+      INSTANCE_NAME: AccessLog-Instance-1
+    healthcheck: *node-healthcheck
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  accesslog_service_2:
+    <<: *node-service
+    build: ./AccessLog_Microservice
+    container_name: campus_accesslog_service_2
+    ports:
+      - "127.0.0.1:5015:5015"
+    environment:
+      <<: *node-environment
+      PORT: "5015"
+      INSTANCE_NAME: AccessLog-Instance-2
+    healthcheck: *node-healthcheck
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  emergency_service:
+    <<: *node-service
+    build: ./EmergencyAlert_Microservice
+    container_name: campus_emergency_service
+    ports:
+      - "127.0.0.1:5006:5006"
+    environment:
+      <<: *node-environment
+      PORT: "5006"
+    healthcheck: *node-healthcheck
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  student_service:
+    <<: *node-service
+    build: ./Student_Microservice
+    container_name: campus_student_service
+    ports:
+      - "127.0.0.1:5007:5007"
+    environment:
+      <<: *node-environment
+      PORT: "5007"
+    healthcheck: *node-healthcheck
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  teacher_service:
+    <<: *node-service
+    build: ./Teacher_Microservice
+    container_name: campus_teacher_service
+    ports:
+      - "127.0.0.1:5008:5008"
+    environment:
+      <<: *node-environment
+      PORT: "5008"
+    healthcheck: *node-healthcheck
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  api_gateway:
+    <<: *node-service
+    build: ./APIGateway_Microservice
+    container_name: campus_api_gateway
+    ports:
+      # Local-only by default. On EC2, set GATEWAY_BIND_IP=0.0.0.0 only
+      # if the security group is restricted appropriately.
+      - "${GATEWAY_BIND_IP:-127.0.0.1}:4000:4000"
+    environment:
+      PORT: "4000"
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
       REGISTRATION_SERVICE_URL: http://registration_service:5001
       AUTH_SERVICE_URL: http://auth_service:5002
@@ -47,8 +195,7 @@ services:
       EMERGENCY_SERVICE_URL: http://emergency_service:5006
       STUDENT_SERVICE_URL: http://student_service:5007
       TEACHER_SERVICE_URL: http://teacher_service:5008
-    networks:
-    - campus_network
+    healthcheck: *node-healthcheck
     depends_on:
       registration_service:
         condition: service_healthy
@@ -67,192 +214,4 @@ services:
       student_service:
         condition: service_healthy
       teacher_service:
-        condition: service_healthy
-  registration_service:
-    build:
-      context: ./Registration_Microservice
-      dockerfile: Dockerfile
-    container_name: campus_registration_service
-    restart: always
-    ports:
-    - 127.0.0.1:5001:5001
-    environment:
-      PORT: '5001'
-      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
-    networks:
-    - campus_network
-    depends_on:
-      mongodb:
-        condition: service_healthy
-  auth_service:
-    build:
-      context: ./Authentication_Microservice
-      dockerfile: Dockerfile
-    container_name: campus_auth_service
-    restart: always
-    ports:
-    - 127.0.0.1:5002:5002
-    environment:
-      PORT: '5002'
-      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
-    networks:
-    - campus_network
-    depends_on:
-      mongodb:
-        condition: service_healthy
-  room_service:
-    build:
-      context: ./Room_Microservice
-      dockerfile: Dockerfile
-    container_name: campus_room_service
-    restart: always
-    ports:
-    - 127.0.0.1:5003:5003
-    environment:
-      PORT: '5003'
-      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
-    networks:
-    - campus_network
-    depends_on:
-      mongodb:
-        condition: service_healthy
-  permission_service:
-    build:
-      context: ./Permission_Microservice
-      dockerfile: Dockerfile
-    container_name: campus_permission_service
-    restart: always
-    ports:
-    - 127.0.0.1:5004:5004
-    environment:
-      PORT: '5004'
-      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
-    networks:
-    - campus_network
-    depends_on:
-      mongodb:
-        condition: service_healthy
-  accesslog_service_1:
-    build:
-      context: ./AccessLog_Microservice
-      dockerfile: Dockerfile
-    container_name: campus_accesslog_service_1
-    restart: always
-    ports:
-    - 127.0.0.1:5005:5005
-    environment:
-      PORT: '5005'
-      INSTANCE_NAME: AccessLog-Instance-1
-      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
-    networks:
-    - campus_network
-    depends_on:
-      mongodb:
-        condition: service_healthy
-  accesslog_service_2:
-    build:
-      context: ./AccessLog_Microservice
-      dockerfile: Dockerfile
-    container_name: campus_accesslog_service_2
-    restart: always
-    ports:
-    - 127.0.0.1:5015:5015
-    environment:
-      PORT: '5015'
-      INSTANCE_NAME: AccessLog-Instance-2
-      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
-    networks:
-    - campus_network
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    healthcheck:
-      test:
-      - CMD
-      - wget
-      - --spider
-      - -q
-      - http://127.0.0.1:5015/health
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-  emergency_service:
-    build:
-      context: ./EmergencyAlert_Microservice
-      dockerfile: Dockerfile
-    container_name: campus_emergency_service
-    restart: always
-    ports:
-    - 127.0.0.1:5006:5006
-    environment:
-      PORT: '5006'
-      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
-    networks:
-    - campus_network
-    depends_on:
-      mongodb:
-        condition: service_healthy
-  student_service:
-    build:
-      context: ./Student_Microservice
-      dockerfile: Dockerfile
-    container_name: campus_student_service
-    restart: always
-    ports:
-    - 127.0.0.1:5007:5007
-    environment:
-      PORT: '5007'
-      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
-    healthcheck:
-      test:
-      - CMD
-      - wget
-      - --spider
-      - -q
-      - http://127.0.0.1:5007/health
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-    - campus_network
-    depends_on:
-      mongodb:
-        condition: service_healthy
-  teacher_service:
-    build:
-      context: ./Teacher_Microservice
-      dockerfile: Dockerfile
-    container_name: campus_teacher_service
-    restart: always
-    ports:
-    - 127.0.0.1:5008:5008
-    environment:
-      PORT: '5008'
-      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
-      JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
-    healthcheck:
-      test:
-      - CMD
-      - wget
-      - --spider
-      - -q
-      - http://127.0.0.1:5008/health
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    networks:
-    - campus_network
-    depends_on:
-      mongodb:
         condition: service_healthy
