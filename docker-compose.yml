@@ -78,7 +78,7 @@ services:
     - 127.0.0.1:5001:5001
     environment:
       PORT: '5001'
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
     networks:
     - campus_network
@@ -95,7 +95,7 @@ services:
     - 127.0.0.1:5002:5002
     environment:
       PORT: '5002'
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
     networks:
     - campus_network
@@ -112,7 +112,7 @@ services:
     - 127.0.0.1:5003:5003
     environment:
       PORT: '5003'
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
     networks:
     - campus_network
@@ -129,7 +129,7 @@ services:
     - 127.0.0.1:5004:5004
     environment:
       PORT: '5004'
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
     networks:
     - campus_network
@@ -147,7 +147,7 @@ services:
     environment:
       PORT: '5005'
       INSTANCE_NAME: AccessLog-Instance-1
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
     networks:
     - campus_network
@@ -165,7 +165,7 @@ services:
     environment:
       PORT: '5015'
       INSTANCE_NAME: AccessLog-Instance-2
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
     networks:
     - campus_network
@@ -193,7 +193,7 @@ services:
     - 127.0.0.1:5006:5006
     environment:
       PORT: '5006'
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
     networks:
     - campus_network
@@ -210,7 +210,7 @@ services:
     - 127.0.0.1:5007:5007
     environment:
       PORT: '5007'
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
     healthcheck:
       test:
@@ -238,7 +238,7 @@ services:
     - 127.0.0.1:5008:5008
     environment:
       PORT: '5008'
-      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
+      MONGO_URI: ${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-this-secret-before-deployment}
     healthcheck:
       test:

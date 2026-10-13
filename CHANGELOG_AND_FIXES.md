@@ -11,16 +11,19 @@
 
 * **The Original Code**:
   In `docker-compose.yml`, services used:
+
   ```yaml
   MONGO_URI=${MONGO_URI:-mongodb://localhost:27017/smart_campus_access_db}
   ```
 * **The Bug**:
   Inside a Docker container on the bridge network (`campus_network`), `localhost:27017` refers to the container itself (`127.0.0.1`), **not** the `campus_mongodb` container. If someone cloned the repository on a new machine or AWS EC2 without a `.env` file, all 6 microservices immediately crashed on startup with:
+
   ```text
   MongoDB Connection Error: connect ECONNREFUSED 127.0.0.1:27017
   ```
 * **The Solution**:
   Updated the fallback default in `docker-compose.yml` to:
+
   ```yaml
   MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/smart_campus_access_db}
   ```
