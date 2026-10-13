@@ -25,7 +25,32 @@ const RoomSchema = new mongoose.Schema(
             default: 'GENERAL' 
         },
         isLocked: { type: Boolean, default: false },
-        isEmergencyLocked: { type: Boolean, default: false }
+        isEmergencyLocked: { type: Boolean, default: false },
+        
+        // Course & Classroom Management
+        courseCode: { type: String, trim: true, uppercase: true, default: '' },
+        courseTitle: { type: String, trim: true, default: '' },
+        assignedFaculty: [
+            {
+                email: { type: String, lowercase: true, trim: true },
+                name: { type: String, trim: true },
+                assignedAt: { type: Date, default: Date.now }
+            }
+        ],
+        enrolledStudents: [
+            {
+                email: { type: String, lowercase: true, trim: true },
+                name: { type: String, trim: true },
+                enrolledAt: { type: Date, default: Date.now }
+            }
+        ],
+        pendingEnrollmentRequests: [
+            {
+                email: { type: String, lowercase: true, trim: true },
+                name: { type: String, trim: true },
+                requestedAt: { type: Date, default: Date.now }
+            }
+        ]
     },
     {
         timestamps: true,

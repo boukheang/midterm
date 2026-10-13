@@ -14,7 +14,7 @@ const proxy = httpProxy.createProxyServer({
 });
 
 const PORT = process.env.PORT || 4000;
-const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRETE || 'CampusSecuritySuperSecretKey2026!#@';
+const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRETE || 'dev-only-change-this-secret-before-deployment';
 
 // Upstream Target URLs
 const REG_SERVICE_URL = process.env.REGISTRATION_SERVICE_URL || 'http://localhost:5001';
@@ -54,8 +54,8 @@ proxy.on('error', (err, req, res) => {
 });
 
 // Helper: Forward request to upstream microservice with identity headers
-function forward(req, res, targetUrl, extraHeaders = {}) {
-    req.url = req.originalUrl;
+function forward(req, res, targetUrl, extraHeaders = {}, pathOverride = null) {
+    req.url = pathOverride || req.originalUrl;
 
     if (req.user) {
         req.headers['x-user-id'] = req.user.id || '';
@@ -198,13 +198,26 @@ app.use(['/login', '/api/auth/login', '/api/auth/verify'], (req, res) => {
 // Lock Toggle (PATCH) -> Admin, Faculty
 // Read (GET) -> Admin, Faculty, Student
 app.use('/api/rooms', authToken, (req, res, next) => {
+    const path = req.path.toLowerCase();
+    // Role-specific classroom workflows must be checked before the generic write rule.
+    if (req.method === 'POST' && path.endsWith('/request-enrollment')) {
+        return authRole(['student'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
+    }
+    if (req.method === 'POST' && (path.endsWith('/approve-enrollment') || path.endsWith('/reject-enrollment') || path.endsWith('/remove-student'))) {
+        return authRole(['admin', 'faculty'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
+    }
+    if (req.method === 'POST' && path.endsWith('/assign-faculty')) {
+        return authRole(['admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
+    }
+    if (req.method === 'POST' && path.endsWith('/enroll-student')) {
+        return authRole(['admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
+    }
     if (['POST', 'PUT', 'DELETE'].includes(req.method)) {
         return authRole(['admin'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
     }
     if (req.method === 'PATCH') {
         return authRole(['admin', 'faculty'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
     }
-    // GET requests
     return authRole(['admin', 'faculty', 'student'])(req, res, () => forward(req, res, ROOM_SERVICE_URL));
 });
 
@@ -287,11 +300,13 @@ app.use('/api/alerts', authToken, (req, res, next) => {
 // ====================================================================
 app.use('/admin', authToken, authRole(['admin']), (req, res) => {
     console.log("[API Gateway] Routing to Admin User Management API in Registration Service");
-    forward(req, res, REG_SERVICE_URL);
+    const upstreamPath = req.originalUrl.replace(/^\/admin/, '') || '/';
+    forward(req, res, REG_SERVICE_URL, {}, upstreamPath);
 });
 
 app.use('/api/admin', authToken, authRole(['admin']), (req, res) => {
-    forward(req, res, REG_SERVICE_URL);
+    const upstreamPath = req.originalUrl.replace(/^\/api\/admin/, '') || '/';
+    forward(req, res, REG_SERVICE_URL, {}, upstreamPath);
 });
 
 // ====================================================================

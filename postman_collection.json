@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "c1f7a4e2-63b9-4912-8e81-7dfa932c510e",
-    "name": "Smart Campus Access Control System - API Gateway",
-    "description": "Comprehensive Postman test collection for the Distributed Campus Access Control System. Fully synchronized with MongoDB Atlas (clusterdb) and the Gateway UI console (http://localhost:4000).",
+    "name": "Smart Campus Access Control System - Complete API Collection",
+    "description": "Postman Collection covering 100% of the distributed microservices architecture (API Gateway, Registration, Authentication, Room Management, Permission Control, Load-Balanced Access Logging, Emergency Alerts, Student Microservice, and Teacher Microservice). Includes automated token extraction, RBAC negative testing, classroom enrollment, and diagnostic endpoints.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -25,11 +25,445 @@
       "key": "facultyToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "roomNumber",
+      "value": "ENG-301",
+      "type": "string"
+    },
+    {
+      "key": "roomId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "permissionId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "alertId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reportedAlertId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testUserId",
+      "value": "USR-1001",
+      "type": "string"
+    },
+    {
+      "key": "testCardId",
+      "value": "CARD-123456",
+      "type": "string"
+    },
+    {
+      "key": "regServiceUrl",
+      "value": "http://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "authServiceUrl",
+      "value": "http://localhost:5002",
+      "type": "string"
+    },
+    {
+      "key": "roomServiceUrl",
+      "value": "http://localhost:5003",
+      "type": "string"
+    },
+    {
+      "key": "permServiceUrl",
+      "value": "http://localhost:5004",
+      "type": "string"
+    },
+    {
+      "key": "accessLog1Url",
+      "value": "http://localhost:5005",
+      "type": "string"
+    },
+    {
+      "key": "accessLog2Url",
+      "value": "http://localhost:5015",
+      "type": "string"
+    },
+    {
+      "key": "emergencyUrl",
+      "value": "http://localhost:5006",
+      "type": "string"
+    },
+    {
+      "key": "studentUrl",
+      "value": "http://localhost:5007",
+      "type": "string"
+    },
+    {
+      "key": "teacherUrl",
+      "value": "http://localhost:5008",
+      "type": "string"
     }
   ],
   "item": [
     {
+      "name": "0. Gateway & Diagnostics",
+      "description": "System health monitoring, gateway routing diagnostics, and round-robin load balancer metrics.",
+      "item": [
+        {
+          "name": "0.1 API Gateway Health & Upstream Map",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Verifies API Gateway status and lists mapped upstream microservice target URLs."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Service name and status UP\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.service).to.include(\"API Gateway\");",
+                  "    pm.expect(json.status).to.eql(\"UP\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.2 Round-Robin Load Balancer Live Statistics (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/gateway/load-balancer-stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gateway",
+                "load-balancer-stats"
+              ]
+            },
+            "description": "Queries live metrics and request counts across the AccessLog load-balanced cluster."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Load balancer stats returned\", function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(json.stats).to.have.property(\"instances\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.3 Direct Microservice Container Health Checks",
+          "description": "Direct loopback port health checks for diagnosing individual microservices on localhost / EC2.",
+          "item": [
+            {
+              "name": "Health - Registration Service (Port 5001)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{regServiceUrl}}/health",
+                  "host": [
+                    "{{regServiceUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                },
+                "description": "Direct health check on Registration container (5001)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Health - Authentication Service (Port 5002)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{authServiceUrl}}/health",
+                  "host": [
+                    "{{authServiceUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                },
+                "description": "Direct health check on Authentication container (5002)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Health - Room Management Service (Port 5003)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{roomServiceUrl}}/health",
+                  "host": [
+                    "{{roomServiceUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                },
+                "description": "Direct health check on Room container (5003)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Health - Access Permission Service (Port 5004)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{permServiceUrl}}/health",
+                  "host": [
+                    "{{permServiceUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                },
+                "description": "Direct health check on Permission container (5004)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Health - Access Log Node 1 (Port 5005)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{accessLog1Url}}/health",
+                  "host": [
+                    "{{accessLog1Url}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                },
+                "description": "Direct health check on AccessLog Instance 1 (5005)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Health - Access Log Node 2 (Port 5015)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{accessLog2Url}}/health",
+                  "host": [
+                    "{{accessLog2Url}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                },
+                "description": "Direct health check on AccessLog Instance 2 (5015)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Health - Emergency Alert Service (Port 5006)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{emergencyUrl}}/health",
+                  "host": [
+                    "{{emergencyUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                },
+                "description": "Direct health check on Emergency container (5006)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Health - Student Service (Port 5007)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{studentUrl}}/health",
+                  "host": [
+                    "{{studentUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                },
+                "description": "Direct health check on Student container (5007)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Health - Teacher Service (Port 5008)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{teacherUrl}}/health",
+                  "host": [
+                    "{{teacherUrl}}"
+                  ],
+                  "path": [
+                    "health"
+                  ]
+                },
+                "description": "Direct health check on Teacher container (5008)."
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "1. Authentication & Registration",
+      "description": "Account creation, login, JWT token issuance with auto-saving, batch user registration, and token validation.",
       "item": [
         {
           "name": "1.1 Register Admin User",
@@ -38,13 +472,10 @@
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Admin Director\",\n  \"email\": \"admin@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"admin\",\n  \"department\": \"Campus Security\"\n}"
-            },
             "url": {
               "raw": "{{baseUrl}}/reg",
               "host": [
@@ -54,71 +485,109 @@
                 "reg"
               ]
             },
-            "description": "Registers an administrator account stored persistently in MongoDB Atlas."
+            "description": "Registers an administrator account stored persistently in MongoDB.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin Director\",\n  \"email\": \"admin@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"admin\",\n  \"department\": \"Campus Security\",\n  \"phone\": \"+1-555-0100\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
-        },
-        {
-          "name": "1.2 Login Admin (Auto-saves adminToken)",
+          "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
+                  "pm.test(\"Status code is 201 Created or 409 Conflict (Already exists)\", function () {",
+                  "    pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.test(\"User registered successfully\", function () {",
+                  "        pm.expect(json.success).to.be.true;",
+                  "        pm.expect(json.user.role).to.eql(\"admin\");",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Login Admin (Auto-saves adminToken)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "description": "Logs in as administrator and automatically stores JWT token in {{adminToken}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "",
                   "const json = pm.response.json();",
+                  "pm.test(\"Token received and valid\", function () {",
+                  "    pm.expect(json.token).to.be.a('string');",
+                  "});",
                   "if (json.token) {",
                   "    pm.collectionVariables.set(\"adminToken\", json.token);",
                   "    pm.environment.set(\"adminToken\", json.token);",
                   "    console.log(\"Saved adminToken:\", json.token);",
+                  "}",
+                  "if (json.user && json.user.id) {",
+                  "    pm.collectionVariables.set(\"adminUserId\", json.user.id);",
+                  "    pm.environment.set(\"adminUserId\", json.user.id);",
                   "}"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"admin\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "login"
-              ]
-            },
-            "description": "Logs in as admin and automatically stores JWT token in {{adminToken}}."
-          },
-          "response": []
+          ]
         },
         {
-          "name": "1.3 Register Student User",
+          "name": "1.3 Register Faculty User",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Student Demo\",\n  \"email\": \"student@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"student\",\n  \"department\": \"Computer Science\"\n}"
-            },
             "url": {
               "raw": "{{baseUrl}}/reg",
               "host": [
@@ -128,44 +597,43 @@
                 "reg"
               ]
             },
-            "description": "Registers a student user with standard privileges in MongoDB Atlas."
+            "description": "Registers a faculty member account.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Faculty Professor\",\n  \"email\": \"faculty@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"faculty\",\n  \"department\": \"Engineering\",\n  \"phone\": \"+1-555-0200\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
-        },
-        {
-          "name": "1.4 Login Student (Auto-saves studentToken)",
+          "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "const json = pm.response.json();",
-                  "if (json.token) {",
-                  "    pm.collectionVariables.set(\"studentToken\", json.token);",
-                  "    pm.environment.set(\"studentToken\", json.token);",
-                  "    console.log(\"Saved studentToken:\", json.token);",
-                  "}"
-                ],
-                "type": "text/javascript"
+                  "pm.test(\"Status code is 201 or 409\", function () {",
+                  "    pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "1.4 Login Faculty (Auto-saves facultyToken)",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"student@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"student\"\n}"
-            },
             "url": {
               "raw": "{{baseUrl}}/login",
               "host": [
@@ -175,71 +643,95 @@
                 "login"
               ]
             },
-            "description": "Logs in as student and automatically stores JWT token in {{studentToken}}."
-          },
-          "response": []
-        },
-        {
-          "name": "1.5 Register Faculty User",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "description": "Logs in as faculty and stores JWT token in {{facultyToken}}.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Faculty Professor\",\n  \"email\": \"faculty@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"faculty\",\n  \"department\": \"Engineering\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/reg",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "reg"
-              ]
-            },
-            "description": "Registers a faculty member in MongoDB Atlas."
+              "raw": "{\n  \"email\": \"faculty@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"faculty\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
-        },
-        {
-          "name": "1.6 Login Faculty (Auto-saves facultyToken)",
+          "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
+                  "pm.test(\"Status code is 200 OK\", function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "",
                   "const json = pm.response.json();",
                   "if (json.token) {",
                   "    pm.collectionVariables.set(\"facultyToken\", json.token);",
                   "    pm.environment.set(\"facultyToken\", json.token);",
                   "    console.log(\"Saved facultyToken:\", json.token);",
                   "}"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "1.5 Register Student User",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               }
             ],
+            "url": {
+              "raw": "{{baseUrl}}/reg",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reg"
+              ]
+            },
+            "description": "Registers a student user with standard privileges.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"faculty@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"faculty\"\n}"
-            },
+              "raw": "{\n  \"name\": \"Student Demo\",\n  \"email\": \"student@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"student\",\n  \"department\": \"Computer Science\",\n  \"phone\": \"+1-555-0300\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 or 409\", function () {",
+                  "    pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.6 Login Student (Auto-saves studentToken)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/login",
               "host": [
@@ -249,288 +741,403 @@
                 "login"
               ]
             },
-            "description": "Logs in as faculty and stores JWT token in {{facultyToken}}."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "2. Room Management (Protected)",
-      "item": [
-        {
-          "name": "2.1 List All Campus Rooms",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/rooms",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "rooms"
-              ]
-            },
-            "description": "Returns live room inventory from MongoDB Atlas. Synchronized with the web UI table."
-          },
-          "response": []
-        },
-        {
-          "name": "2.2 Create Room (Admin Clearance)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
+            "description": "Logs in as student and stores JWT token in {{studentToken}}.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomNumber\": \"ENG-301\",\n  \"roomName\": \"Software Engineering Lab\",\n  \"building\": \"Engineering Hall\",\n  \"floor\": 3,\n  \"roomType\": \"LAB\",\n  \"capacity\": 50,\n  \"securityClearance\": \"GENERAL\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/rooms",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "rooms"
-              ]
-            },
-            "description": "Creates a new room in MongoDB Atlas. Immediately renders in the web console."
-          },
-          "response": []
-        },
-        {
-          "name": "2.3 Lock Room (Admin)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"lock\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/rooms/ENG-301/lock",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "rooms",
-                "ENG-301",
-                "lock"
-              ]
-            },
-            "description": "Manually engages electronic deadbolt on target room."
-          },
-          "response": []
-        },
-        {
-          "name": "2.4 Unlock Room (Admin)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"lock\": false\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/rooms/ENG-301/lock",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "rooms",
-                "ENG-301",
-                "lock"
-              ]
-            },
-            "description": "Unlocks electronic deadbolt on target room."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "3. Negative Test Cases (Assignment Requirements)",
-      "item": [
-        {
-          "name": "3.1 Wrong Password (Expect 401)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
-                  "    pm.response.to.have.status(401);",
-                  "});"
-                ],
-                "type": "text/javascript"
+              "raw": "{\n  \"email\": \"student@campus.edu\",\n  \"password\": \"Password123!\",\n  \"role\": \"student\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@campus.edu\",\n  \"password\": \"WRONG_PASSWORD_123\",\n  \"role\": \"admin\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "login"
-              ]
-            },
-            "description": "Negative check 4.1: Submitting incorrect password returns 401 Unauthorized."
           },
-          "response": []
-        },
-        {
-          "name": "3.2 Missing Token (Expect 401)",
+          "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
-                  "    pm.response.to.have.status(401);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/rooms",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "rooms"
-              ]
-            },
-            "description": "Negative check 4.2: Requesting protected resource with no token returns 401."
-          },
-          "response": []
-        },
-        {
-          "name": "3.3 Invalid Token (Expect 403)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 403 Forbidden\", function () {",
-                  "    pm.response.to.have.status(403);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer fake123"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/rooms",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "rooms"
-              ]
-            },
-            "description": "Negative check 4.3: Submitting invalid/forged Bearer token returns 403 Forbidden."
-          },
-          "response": []
-        },
-        {
-          "name": "3.4 RBAC - Student Cannot Create Room (Expect 403)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 403 Forbidden\", function () {",
-                  "    pm.response.to.have.status(403);",
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
                   "});",
                   "const json = pm.response.json();",
-                  "pm.test(\"Role student unauthorized message\", function () {",
-                  "    pm.expect(json.message).to.include(\"Role 'student' is unauthorized\");",
-                  "});"
-                ],
-                "type": "text/javascript"
+                  "if (json.token) {",
+                  "    pm.collectionVariables.set(\"studentToken\", json.token);",
+                  "    pm.environment.set(\"studentToken\", json.token);",
+                  "    console.log(\"Saved studentToken:\", json.token);",
+                  "}"
+                ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "1.7 Batch Register Users (Admin Bulk Import)",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{studentToken}}"
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
               }
             ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/api/auth/batch-register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "api",
+                "auth",
+                "batch-register"
+              ]
+            },
+            "description": "Bulk user registration API processed by Registration microservice.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomNumber\": \"ENG-999\",\n  \"roomName\": \"Unauthorized Room\",\n  \"building\": \"Engineering Hall\"\n}"
+              "raw": "{\n  \"users\": [\n    {\n      \"name\": \"Bulk Student Alpha\",\n      \"email\": \"alpha_student@campus.edu\",\n      \"password\": \"Password123!\",\n      \"role\": \"student\",\n      \"department\": \"Computer Science\"\n    },\n    {\n      \"name\": \"Bulk Faculty Beta\",\n      \"email\": \"beta_faculty@campus.edu\",\n      \"password\": \"Password123!\",\n      \"role\": \"faculty\",\n      \"department\": \"Electrical Engineering\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Batch results returned\", function () {",
+                  "    pm.expect(json.results).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.8 Verify JWT Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify"
+              ]
             },
+            "description": "Token verification endpoint used by services to validate signature and decoded claims.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{adminToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Token is valid\", function () {",
+                  "    pm.expect(json.valid).to.be.true;",
+                  "    pm.expect(json.user.role).to.eql(\"admin\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. User Management (Admin Direct)",
+      "description": "Administrative querying, RFID card lookup, and user profile management routed directly to the Registration Service via Gateway /api/admin/*.",
+      "item": [
+        {
+          "name": "2.1 List All Registered Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            },
+            "description": "Retrieves full user inventory with credentials omitted."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Users array returned\", function () {",
+                  "    pm.expect(json.users).to.be.an('array');",
+                  "    if (json.users.length > 0) {",
+                  "        pm.collectionVariables.set(\"testUserId\", json.users[0]._id);",
+                  "        pm.environment.set(\"testUserId\", json.users[0]._id);",
+                  "        if (json.users[0].cardId) {",
+                  "            pm.collectionVariables.set(\"testCardId\", json.users[0].cardId);",
+                  "            pm.environment.set(\"testCardId\", json.users[0].cardId);",
+                  "        }",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Filter Users by Role (Students Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users?role=student",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "student"
+                }
+              ]
+            },
+            "description": "Filters users database by role."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"All returned users have student role\", function () {",
+                  "    json.users.forEach(u => pm.expect(u.role).to.eql(\"student\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/{{testUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "{{testUserId}}"
+              ]
+            },
+            "description": "Fetches specific user profile by user identifier."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"User object returned\", function () {",
+                  "    pm.expect(json.user._id).to.eql(pm.collectionVariables.get(\"testUserId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Get User by RFID Card ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/card/{{testCardId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "card",
+                "{{testCardId}}"
+              ]
+            },
+            "description": "Fast badge scan lookup by physical card identifier."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Delete User by Email (Admin Cleanup)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/alpha_student@campus.edu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                "alpha_student@campus.edu"
+              ]
+            },
+            "description": "Removes user from database by email."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Room Management (Protected)",
+      "description": "Classroom inventory, capacities, security clearance levels, and physical electronic deadbolt locking.",
+      "item": [
+        {
+          "name": "3.1 List All Campus Rooms",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/rooms",
               "host": [
@@ -541,217 +1148,143 @@
                 "rooms"
               ]
             },
-            "description": "Negative check 4.4: Role-Based Access Control denies room creation to students."
+            "description": "Returns live room inventory. Synchronized with the web UI table."
           },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "4. Door Swipe & Round-Robin Load Balancer",
-      "item": [
-        {
-          "name": "4.1 Badge Swipe Request 1 (Routes to Node 1)",
+          "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
+                  "pm.test(\"Status code is 200 OK\", function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Header X-Load-Balanced-By is API-Gateway-RoundRobin\", function () {",
-                  "    pm.expect(pm.response.headers.get(\"X-Load-Balanced-By\")).to.eql(\"API-Gateway-RoundRobin\");",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Rooms array returned\", function () {",
+                  "    pm.expect(json.rooms).to.be.an('array');",
                   "});"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": \"USR-1001\",\n  \"userEmail\": \"student@campus.edu\",\n  \"userRole\": \"student\",\n  \"roomId\": \"ROOM-ENG-301\",\n  \"roomNumber\": \"ENG-301\",\n  \"building\": \"Engineering Hall\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/logs/swipe",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "logs",
-                "swipe"
-              ]
-            },
-            "description": "Simulates door reader badge swipe. Gateway load balancer routes to AccessLog-Instance-1 or AccessLog-Instance-2."
-          },
-          "response": []
+          ]
         },
         {
-          "name": "4.2 Badge Swipe Request 2 (Routes to Node 2)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test(\"Header X-Load-Balanced-By is API-Gateway-RoundRobin\", function () {",
-                  "    pm.expect(pm.response.headers.get(\"X-Load-Balanced-By\")).to.eql(\"API-Gateway-RoundRobin\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": \"USR-1001\",\n  \"userEmail\": \"student@campus.edu\",\n  \"userRole\": \"student\",\n  \"roomId\": \"ROOM-ENG-301\",\n  \"roomNumber\": \"ENG-301\",\n  \"building\": \"Engineering Hall\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/logs/swipe",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "logs",
-                "swipe"
-              ]
-            },
-            "description": "Second consecutive swipe. Verifies round-robin alternating distribution."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "5. Emergency Alert & Campus Lockdown",
-      "item": [
-        {
-          "name": "5.1 Check Lockdown Status",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/emergency/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "emergency",
-                "status"
-              ]
-            },
-            "description": "Queries campus-wide emergency lockdown status."
-          },
-          "response": []
-        },
-        {
-          "name": "5.2 Trigger Campus Lockdown (Admin)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"active\": true,\n  \"reason\": \"Security Drill\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/emergency/lockdown",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "emergency",
-                "lockdown"
-              ]
-            },
-            "description": "Engages emergency lockdown across all buildings. Immediately updates web UI banner."
-          },
-          "response": []
-        },
-        {
-          "name": "5.3 Lift Campus Lockdown (Admin)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"active\": false\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/emergency/lockdown",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "emergency",
-                "lockdown"
-              ]
-            },
-            "description": "Lifts emergency lockdown and restores standard access policies."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "6. Classroom Enrollment & Faculty Management",
-      "item": [
-        {
-          "name": "6.1 Get Room by Number (Works with ENG-301 or :ENG-301)",
+          "name": "3.2 Filter Rooms by Building and Type",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms?building=Engineering%20Hall&roomType=LAB",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ],
+              "query": [
+                {
+                  "key": "building",
+                  "value": "Engineering Hall"
+                },
+                {
+                  "key": "roomType",
+                  "value": "LAB"
+                }
+              ]
+            },
+            "description": "Filters rooms using query parameters."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Create Room (Admin Clearance)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
+            },
+            "description": "Creates a new classroom in MongoDB.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomNumber\": \"ENG-301\",\n  \"roomName\": \"Software Engineering Lab\",\n  \"building\": \"Engineering Hall\",\n  \"floor\": 3,\n  \"roomType\": \"LAB\",\n  \"capacity\": 50,\n  \"securityClearance\": \"GENERAL\",\n  \"courseCode\": \"CS301\",\n  \"courseTitle\": \"Advanced Software Engineering\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created or 409 Conflict\", function () {",
+                  "    pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.room && json.room._id) {",
+                  "        pm.collectionVariables.set(\"roomId\", json.room._id);",
+                  "        pm.environment.set(\"roomId\", json.room._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 Get Room by Number or ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -765,30 +1298,102 @@
                 "ENG-301"
               ]
             },
-            "description": "Retrieves room details. Universal resolver strips any leading colon (:ENG-301 or ENG-301) seamlessly."
+            "description": "Retrieves specific room details."
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Room number matches\", function () {",
+                  "    pm.expect(json.room.roomNumber).to.eql(\"ENG-301\");",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "6.2 Assign Faculty to Classroom (Admin)",
+          "name": "3.5 Update Room Details (Admin)",
           "request": {
-            "method": "POST",
+            "method": "PUT",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
               }
             ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301"
+              ]
+            },
+            "description": "Updates room properties.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"faculty@campus.edu\",\n  \"name\": \"Dr. Sokhadom\",\n  \"courseCode\": \"CS-301\",\n  \"courseTitle\": \"Distributed Systems & Cloud Computing\"\n}"
-            },
+              "raw": "{\n  \"roomName\": \"Software Engineering & Cloud Computing Lab\",\n  \"capacity\": 55,\n  \"securityClearance\": \"GENERAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Capacity updated to 55\", function () {",
+                  "    pm.expect(json.room.capacity).to.eql(55);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 Lock Room Deadbolt (Admin / Assigned Faculty)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/api/rooms/ENG-301/assign-faculty",
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/toggle-lock",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -796,33 +1401,57 @@
                 "api",
                 "rooms",
                 "ENG-301",
-                "assign-faculty"
+                "toggle-lock"
               ]
             },
-            "description": "Admin assigns a faculty member as the instructor for a specific classroom and course."
+            "description": "Manually engages electronic deadbolt on target room door.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isLocked\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Room is locked\", function () {",
+                  "    pm.expect(json.room.isLocked).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "6.3 Student Request Class Enrollment",
+          "name": "3.7 Unlock Room Deadbolt (Admin / Assigned Faculty)",
           "request": {
-            "method": "POST",
+            "method": "PATCH",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{studentToken}}"
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"student@campus.edu\",\n  \"name\": \"Student Candidate\"\n}"
-            },
             "url": {
-              "raw": "{{baseUrl}}/api/rooms/ENG-301/request-enrollment",
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/toggle-lock",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -830,21 +1459,93 @@
                 "api",
                 "rooms",
                 "ENG-301",
-                "request-enrollment"
+                "toggle-lock"
               ]
             },
-            "description": "Student submits an enrollment request to join an active classroom course."
+            "description": "Unlocks electronic deadbolt on target room door.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isLocked\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Room is unlocked\", function () {",
+                  "    pm.expect(json.room.isLocked).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "6.4 View Classroom Roster & Pending Requests (Faculty / Admin)",
+          "name": "3.8 Delete Room (Admin Cleanup)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/TEMP-999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "TEMP-999"
+              ]
+            },
+            "description": "Deletes room record from database."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Classroom Enrollment & Roster Management",
+      "description": "End-to-end classroom workflows: Teacher assignment, student course enrollment request, faculty approval/rejection, roster inspection, and class removal.",
+      "item": [
+        {
+          "name": "4.1 View Classroom Roster & Enrollment Status",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{facultyToken}}"
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
               }
             ],
             "url": {
@@ -859,28 +1560,157 @@
                 "roster"
               ]
             },
-            "description": "Returns assigned instructors, enrolled students, pending requests, and capacity numbers."
+            "description": "Returns assigned faculty list, enrolled students list, pending requests, and seat capacity statistics."
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Roster structure is complete\", function () {",
+                  "    pm.expect(json).to.have.property(\"assignedFaculty\");",
+                  "    pm.expect(json).to.have.property(\"enrolledStudents\");",
+                  "    pm.expect(json).to.have.property(\"stats\");",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "6.5 Faculty Approve Student Enrollment",
+          "name": "4.2 Assign Faculty to Classroom (Admin)",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{facultyToken}}"
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
               }
             ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/assign-faculty",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "assign-faculty"
+              ]
+            },
+            "description": "Assigns teacher to room, granting approval rights and lock control.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"student@campus.edu\"\n}"
+              "raw": "{\n  \"email\": \"faculty@campus.edu\",\n  \"name\": \"Faculty Professor\",\n  \"courseCode\": \"CS301\",\n  \"courseTitle\": \"Advanced Software Engineering\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Faculty assigned\", function () {",
+                  "    pm.expect(json.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 Student Request Class Enrollment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/request-enrollment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "ENG-301",
+                "request-enrollment"
+              ]
             },
+            "description": "Student submits enrollment application for room/course.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Student Demo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK or 400 Already Requested/Enrolled\", function () {",
+                  "    pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 Faculty Approve Student Enrollment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{facultyToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/api/rooms/ENG-301/approve-enrollment",
               "host": [
@@ -893,30 +1723,50 @@
                 "approve-enrollment"
               ]
             },
-            "description": "Instructor approves the student enrollment request. Immediately grants classroom door NFC access."
+            "description": "Faculty approves pending student enrollment.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@campus.edu\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "6.6 Faculty Toggle Classroom Lock (Assigned Room)",
+          "name": "4.5 Faculty Reject Student Enrollment",
           "request": {
-            "method": "PATCH",
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{facultyToken}}"
+                "value": "Bearer {{facultyToken}}",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"isLocked\": false\n}"
-            },
             "url": {
-              "raw": "{{baseUrl}}/api/rooms/ENG-301/toggle-lock",
+              "raw": "{{baseUrl}}/api/rooms/ENG-301/reject-enrollment",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -924,64 +1774,51 @@
                 "api",
                 "rooms",
                 "ENG-301",
-                "toggle-lock"
+                "reject-enrollment"
               ]
             },
-            "description": "Assigned faculty locks or unlocks their classroom door. Non-assigned faculty are rejected with 403 Forbidden."
+            "description": "Faculty rejects pending student enrollment request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"unregistered_temp@campus.edu\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "6.7 Enrolled Student Door Badge Swipe (Access Granted)",
+          "name": "4.6 Admin Direct Enroll Student (Bypass Approval)",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{studentToken}}"
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"userId\": \"USR-STUDENT\",\n  \"userEmail\": \"student@campus.edu\",\n  \"userRole\": \"student\",\n  \"roomId\": \"ROOM-ENG-301\",\n  \"roomNumber\": \"ENG-301\",\n  \"building\": \"Engineering Hall\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/logs/swipe",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "logs",
-                "swipe"
-              ]
-            },
-            "description": "Simulates student NFC card swipe. Returns GRANTED because the student was approved into the class."
-          },
-          "response": []
-        },
-        {
-          "name": "6.8 Admin Direct Enroll Student (Bypass Approval)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"student2@campus.edu\",\n  \"name\": \"Direct Student\"\n}"
-            },
             "url": {
               "raw": "{{baseUrl}}/api/rooms/ENG-301/enroll-student",
               "host": [
@@ -994,28 +1831,48 @@
                 "enroll-student"
               ]
             },
-            "description": "Admin directly enrolls a student into a room without waiting for faculty review."
+            "description": "Administrator directly adds student to class roster.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@campus.edu\",\n  \"name\": \"Student Demo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "6.9 Faculty / Admin Remove Student from Class",
+          "name": "4.7 Remove Student from Classroom (Admin / Faculty)",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{facultyToken}}"
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"student2@campus.edu\"\n}"
-            },
             "url": {
               "raw": "{{baseUrl}}/api/rooms/ENG-301/remove-student",
               "host": [
@@ -1028,28 +1885,48 @@
                 "remove-student"
               ]
             },
-            "description": "Removes student from the classroom roster and revokes their door access."
+            "description": "Removes student from classroom enrollment roster.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"student@campus.edu\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
         },
         {
-          "name": "6.10 Admin Remove Faculty from Room",
+          "name": "4.8 Remove Faculty from Classroom (Admin)",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
-                "value": "application/json"
+                "value": "application/json",
+                "type": "text"
               },
               {
                 "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"faculty@campus.edu\"\n}"
-            },
             "url": {
               "raw": "{{baseUrl}}/api/rooms/ENG-301/remove-faculty",
               "host": [
@@ -1062,9 +1939,1806 @@
                 "remove-faculty"
               ]
             },
-            "description": "Unassigns faculty instructor from the classroom."
+            "description": "Removes faculty member from classroom assignment.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"faculty@campus.edu\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Permission Management (Team Member 1)",
+      "description": "Time-bound, weekday-specific role-based access permission policies stored and evaluated by the Access Permission Microservice (Port 5004).",
+      "item": [
+        {
+          "name": "5.1 Grant / Update Room Access Permission (Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/permissions/grant",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "permissions",
+                "grant"
+              ]
+            },
+            "description": "Grants time-bound room permission to student or faculty.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"USR-1001\",\n  \"userEmail\": \"student@campus.edu\",\n  \"userRole\": \"student\",\n  \"roomId\": \"ROOM-ENG-301\",\n  \"roomNumber\": \"ENG-301\",\n  \"allowedDays\": [\n    \"Monday\",\n    \"Tuesday\",\n    \"Wednesday\",\n    \"Thursday\",\n    \"Friday\"\n  ],\n  \"startTime\": \"08:00\",\n  \"endTime\": \"20:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 or 201 Created\", function () {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.permission && json.permission._id) {",
+                  "    pm.collectionVariables.set(\"permissionId\", json.permission._id);",
+                  "    pm.environment.set(\"permissionId\", json.permission._id);",
+                  "    console.log(\"Saved permissionId:\", json.permission._id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 List All Access Permissions (Admin Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "permissions"
+              ]
+            },
+            "description": "Queries all active access policy grants across the university."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Permissions array returned\", function () {",
+                  "    pm.expect(json.permissions).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 Filter Permissions by Role and Room",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/permissions?userRole=student&roomNumber=ENG-301",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "permissions"
+              ],
+              "query": [
+                {
+                  "key": "userRole",
+                  "value": "student"
+                },
+                {
+                  "key": "roomNumber",
+                  "value": "ENG-301"
+                }
+              ]
+            },
+            "description": "Filters permission grants by role and classroom."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.4 View Permissions by User Identifier",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/permissions/user/student@campus.edu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "permissions",
+                "user",
+                "student@campus.edu"
+              ]
+            },
+            "description": "Returns all access policies active for specified student or teacher."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.5 View Permissions for Room",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/permissions/room/ENG-301",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "permissions",
+                "room",
+                "ENG-301"
+              ]
+            },
+            "description": "Lists all authorized individuals for a specific room."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.6 Evaluate / Check Room Access Decision",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/permissions/check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "permissions",
+                "check"
+              ]
+            },
+            "description": "Evaluates access against current time, day of week, and active grants.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userEmail\": \"student@campus.edu\",\n  \"userRole\": \"student\",\n  \"roomNumber\": \"ENG-301\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Decision contains allowed boolean\", function () {",
+                  "    pm.expect(json).to.have.property(\"allowed\");",
+                  "    pm.expect(json).to.have.property(\"reason\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.7 Revoke Access Permission by ID (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/permissions/{{permissionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "permissions",
+                "{{permissionId}}"
+              ]
+            },
+            "description": "Revokes specific room permission policy."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Door Swipe & Round-Robin Load Balancer (Team Member 2)",
+      "description": "High-concurrency badge reader simulation load-balanced across AccessLog Instance 1 (Port 5005) and Instance 2 (Port 5015) with audit persistence.",
+      "item": [
+        {
+          "name": "6.1 Door Badge Swipe Request 1 (Routes to Node 1)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/swipe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "swipe"
+              ]
+            },
+            "description": "First swipe request. Inspected headers verify API Gateway round-robin routing.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"USR-1001\",\n  \"userEmail\": \"student@campus.edu\",\n  \"userRole\": \"student\",\n  \"roomId\": \"ROOM-ENG-301\",\n  \"roomNumber\": \"ENG-301\",\n  \"building\": \"Engineering Hall\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Header X-Load-Balanced-By is API-Gateway-RoundRobin\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"X-Load-Balanced-By\")).to.eql(\"API-Gateway-RoundRobin\");",
+                  "});",
+                  "pm.test(\"Instance header present\", function () {",
+                  "    const inst = pm.response.headers.get(\"X-Served-By-Instance\");",
+                  "    pm.expect(inst).to.be.a('string');",
+                  "    pm.environment.set(\"lastServedInstance1\", inst);",
+                  "    console.log(\"Swipe 1 served by:\", inst);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.2 Door Badge Swipe Request 2 (Routes to Node 2)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/swipe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "swipe"
+              ]
+            },
+            "description": "Second consecutive swipe. Verifies alternation between Instance 1 and Instance 2.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"USR-1001\",\n  \"userEmail\": \"student@campus.edu\",\n  \"userRole\": \"student\",\n  \"roomId\": \"ROOM-ENG-301\",\n  \"roomNumber\": \"ENG-301\",\n  \"building\": \"Engineering Hall\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Header X-Load-Balanced-By is API-Gateway-RoundRobin\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"X-Load-Balanced-By\")).to.eql(\"API-Gateway-RoundRobin\");",
+                  "});",
+                  "pm.test(\"Instance alternation verified\", function () {",
+                  "    const inst2 = pm.response.headers.get(\"X-Served-By-Instance\");",
+                  "    const inst1 = pm.environment.get(\"lastServedInstance1\");",
+                  "    console.log(\"Swipe 2 served by:\", inst2);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.3 Query All Door Access Logs (Admin Audit)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs?limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Retrieves live door swipe audit logs across all buildings."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Logs array returned\", function () {",
+                  "    pm.expect(json.logs).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.4 Filter Logs by Room and Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs?roomNumber=ENG-301&status=GRANTED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "roomNumber",
+                  "value": "ENG-301"
+                },
+                {
+                  "key": "status",
+                  "value": "GRANTED"
+                }
+              ]
+            },
+            "description": "Filters access logs by room and approval status."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.5 Query Access Logs for Specific User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/user/student@campus.edu",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "user",
+                "student@campus.edu"
+              ]
+            },
+            "description": "Retrieves swipe history for an individual user."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.6 Security Audit Analytics Summary (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/stats/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "stats",
+                "summary"
+              ]
+            },
+            "description": "Aggregates swipe volume, approval rate, denial reasons, and most visited rooms."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Statistics structure is complete\", function () {",
+                  "    pm.expect(json.statistics).to.have.property(\"totalSwipes\");",
+                  "    pm.expect(json.statistics).to.have.property(\"approvalRate\");",
+                  "    pm.expect(json.statistics).to.have.property(\"denialBreakdown\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.7 Archive / Cleanup Old Logs (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/cleanup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "cleanup"
+              ]
+            },
+            "description": "Purges audit records older than the specified retention window.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"olderThanDays\": 90\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Emergency Alert & Campus Lockdown (Team Member 2)",
+      "description": "Campus-wide and building-specific emergency lockdown enforcement, incident reporting, and security dispatch integration (Port 5006).",
+      "item": [
+        {
+          "name": "7.1 Check Active Emergency Alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/active",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "active"
+              ]
+            },
+            "description": "Queries live emergency state. When active, UI flashes lockdown alert banner."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Active alerts flag present\", function () {",
+                  "    pm.expect(json).to.have.property(\"isEmergencyActive\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.2 Trigger Campus Emergency Lockdown (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/lockdown",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "lockdown"
+              ]
+            },
+            "description": "Locks all rooms across campus and prevents electronic badge swipe entry.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"building\": \"ALL\",\n  \"description\": \"Security lockdown triggered for testing\",\n  \"severity\": \"CRITICAL\",\n  \"triggeredBy\": \"Campus Security Admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.alert && json.alert._id) {",
+                  "    pm.collectionVariables.set(\"alertId\", json.alert._id);",
+                  "    pm.environment.set(\"alertId\", json.alert._id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.3 Verify Door Swipe Denied During Lockdown",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/swipe",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "swipe"
+              ]
+            },
+            "description": "Confirms that student badge access is blocked with CAMPUS_EMERGENCY_LOCKDOWN during lockdown.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"USR-1001\",\n  \"userEmail\": \"student@campus.edu\",\n  \"userRole\": \"student\",\n  \"roomId\": \"ROOM-ENG-301\",\n  \"roomNumber\": \"ENG-301\",\n  \"building\": \"Engineering Hall\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Access Decision is DENIED\", function () {",
+                  "    pm.expect(json.accessDecision).to.eql(\"DENIED\");",
+                  "    pm.expect(json.log.denialReason).to.eql(\"CAMPUS_EMERGENCY_LOCKDOWN\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.4 Lift Campus Emergency Lockdown (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/lift",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "lift"
+              ]
+            },
+            "description": "Lifts emergency lockdown and restores standard door access permissions.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"building\": \"ALL\",\n  \"resolvedBy\": \"Campus Security Admin\",\n  \"resolutionNotes\": \"All clear confirmed by campus safety.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Lockdown successfully lifted\", function () {",
+                  "    pm.expect(json.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.5 Report Security Incident (Student, Faculty, Staff)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/report",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "report"
+              ]
+            },
+            "description": "Allows any authenticated user to dispatch an incident report.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alertType\": \"SUSPICIOUS_ACTIVITY\",\n  \"building\": \"Engineering Hall\",\n  \"description\": \"Door sensor unlatched on 3rd floor emergency exit\",\n  \"severity\": \"MEDIUM\",\n  \"reportedBy\": \"student@campus.edu\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201 Created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.incident && json.incident._id) {",
+                  "    pm.collectionVariables.set(\"reportedAlertId\", json.incident._id);",
+                  "    pm.environment.set(\"reportedAlertId\", json.incident._id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.6 View Incident & Alert History (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/history?limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Queries past emergency events and security reports."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"History array returned\", function () {",
+                  "    pm.expect(json.history).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.7 Dismiss / Delete Alert Record (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/{{reportedAlertId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "{{reportedAlertId}}"
+              ]
+            },
+            "description": "Removes resolved security report from database."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 or 404\", function () {",
+                  "    pm.expect([200, 404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Student Management Microservice",
+      "description": "Student self-service endpoints (Port 5007): Profile retrieval, contact info updates, and personal room schedules.",
+      "item": [
+        {
+          "name": "8.1 Get Student Profile Information",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/user_info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "user_info"
+              ]
+            },
+            "description": "Retrieves student's authenticated profile information."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"User role is student\", function () {",
+                  "    pm.expect(json.user.role).to.eql(\"student\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.2 Update Student Contact Information",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/update_info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "update_info"
+              ]
+            },
+            "description": "Updates student name, phone, or password.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Student Demo Updated\",\n  \"phone\": \"+1-555-0399\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Student name updated\", function () {",
+                  "    pm.expect(json.user.name).to.eql(\"Student Demo Updated\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.3 Get Student Room Schedule & Active Grants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/room_schedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "room_schedule"
+              ]
+            },
+            "description": "Retrieves all active room access permissions for the authenticated student."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Schedules array returned\", function () {",
+                  "    pm.expect(json.schedules).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "9. Teacher Management Microservice",
+      "description": "Faculty self-service endpoints (Port 5008): Profile retrieval, faculty contact updates, and assigned room schedules.",
+      "item": [
+        {
+          "name": "9.1 Get Faculty Profile Information",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{facultyToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teachers/user_info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teachers",
+                "user_info"
+              ]
+            },
+            "description": "Retrieves faculty member's profile information."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"User role is faculty\", function () {",
+                  "    pm.expect(json.user.role).to.eql(\"faculty\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.2 Update Faculty Contact Information",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{facultyToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teachers/update_info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teachers",
+                "update_info"
+              ]
+            },
+            "description": "Updates faculty member's name or contact number.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Faculty Professor Updated\",\n  \"phone\": \"+1-555-0299\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Faculty name updated\", function () {",
+                  "    pm.expect(json.user.name).to.eql(\"Faculty Professor Updated\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.3 Get Faculty Room Schedule & Active Grants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{facultyToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teachers/room_schedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teachers",
+                "room_schedule"
+              ]
+            },
+            "description": "Retrieves all active room access permissions for the authenticated teacher."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200 OK\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Schedules array returned\", function () {",
+                  "    pm.expect(json.schedules).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10. Negative Test Cases & RBAC Enforcement",
+      "description": "Security boundary checks, credential verification failures, and role-based access control rejections required for submission.",
+      "item": [
+        {
+          "name": "10.1 Wrong Password on Login (Expect 401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "login"
+              ]
+            },
+            "description": "Verifies rejection of invalid user password.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@campus.edu\",\n  \"password\": \"WRONG_PASSWORD_123\",\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Message matches invalid credentials\", function () {",
+                  "    pm.expect(json.message).to.eql(\"Invalid email, password, or role\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.2 Missing Authorization Header (Expect 401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
+            },
+            "description": "Protected route requested without Bearer token header."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Error message asks for token\", function () {",
+                  "    pm.expect(json.message).to.include(\"Please send token\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.3 Invalid / Tampered Token (Expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer fake_invalid_jwt_token_12345",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
+            },
+            "description": "Protected route requested with forged Bearer token."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Error mentions invalid or expired token\", function () {",
+                  "    pm.expect(json.message).to.include(\"Invalid or expired token\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.4 Student Role Cannot Create Room (Expect 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
+            },
+            "description": "Ensures RBAC restricts room creation exclusively to administrators.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomNumber\": \"ENG-999\",\n  \"roomName\": \"Unauthorized Student Room\",\n  \"building\": \"Engineering Hall\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test(\"Role student unauthorized error returned\", function () {",
+                  "    pm.expect(json.message).to.include(\"Role 'student' is unauthorized\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.5 Student Cannot Trigger Campus Lockdown (Expect 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/lockdown",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "alerts",
+                "lockdown"
+              ]
+            },
+            "description": "Ensures students cannot trigger campus lockdowns.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"building\": \"ALL\",\n  \"description\": \"Unauthorized lockdown attempt\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.6 Student Cannot Grant Access Permission (Expect 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/permissions/grant",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "permissions",
+                "grant"
+              ]
+            },
+            "description": "Ensures students cannot grant permissions.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"USR-1001\",\n  \"userEmail\": \"student@campus.edu\",\n  \"roomId\": \"ROOM-ENG-301\",\n  \"roomNumber\": \"ENG-301\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.7 Student Cannot Access Admin User List (Expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            },
+            "description": "Ensures administrative user management routes are protected against non-admins."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.8 Student Accessing Teacher Endpoint (Expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/teachers/user_info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "teachers",
+                "user_info"
+              ]
+            },
+            "description": "Ensures student cannot query teacher private endpoint."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.9 Faculty Accessing Student Endpoint (Expect 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{facultyToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/students/user_info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "students",
+                "user_info"
+              ]
+            },
+            "description": "Ensures faculty cannot query student private endpoint."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
