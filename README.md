@@ -26,7 +26,8 @@ Midterm project implementing a containerized microservices architecture with an 
 
 From the project root directory, run:
 
-```bash
+```powershell
+$env:MONGO_URI = "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/UserData"
 docker compose up -d
 ```
 
@@ -100,3 +101,44 @@ Refer to **[`test.md`](./test.md)** for the complete list of endpoints, JSON pay
   ```bash
   docker compose up -d --build
   ```
+
+## 5. Kubernetes / Minikube Deployment
+
+The Kubernetes manifests are in [`k8s/`](./k8s/). They deploy all application
+containers, keep the microservices private as `ClusterIP` Services, and expose
+only the API Gateway. MongoDB is not deployed in Kubernetes; use a MongoDB
+Atlas connection string in [`k8s/02-secret.yaml`](./k8s/02-secret.yaml).
+
+### Build and deploy locally with Minikube
+
+```powershell
+minikube start
+minikube addons enable ingress
+minikube docker-env | Invoke-Expression
+docker build -t smart-campus/api-gateway:local ./APIGateway_Microservice
+docker build -t smart-campus/registration:local ./Registration_Microservice
+docker build -t smart-campus/authentication:local ./Authentication_Microservice
+docker build -t smart-campus/room:local ./Room_Microservice
+docker build -t smart-campus/permission:local ./Permission_Microservice
+docker build -t smart-campus/access-log:local ./AccessLog_Microservice
+docker build -t smart-campus/emergency:local ./EmergencyAlert_Microservice
+docker build -t smart-campus/student:local ./Student_Microservice
+docker build -t smart-campus/teacher:local ./Teacher_Microservice
+kubectl apply -f k8s/
+kubectl -n smart-campus get pods,services,ingress
+```
+
+Before applying, replace the two placeholder values in
+[`k8s/02-secret.yaml`](./k8s/02-secret.yaml) with a MongoDB Atlas URI and a
+long random JWT secret. The Ingress is configured for `aupp.com` for Fanout
+DNS. For a local demonstration, point `aupp.com` to the Minikube ingress IP in
+your DNS provider or hosts file, then open `http://aupp.com/`.
+
+The gateway pod mounts the `campus-shared-logs` PVC at
+`/var/log/campus`. Its `gateway` container writes request logs and the
+`log-reader` sidecar reads the same file, demonstrating shared access to a
+Kubernetes volume:
+
+```powershell
+kubectl -n smart-campus logs deploy/api-gateway -c log-reader
+```

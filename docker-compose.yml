@@ -2,34 +2,7 @@ networks:
   campus_network:
     driver: bridge
 
-volumes:
-  mongodb_data:
-    driver: local
-
 services:
-  # ==================================================================
-  # DATABASE LAYER: MongoDB
-  # ==================================================================
-  mongodb:
-    image: mongo:7.0
-    container_name: campus_mongodb
-    restart: always
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - campus_network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ==================================================================
-  # COMMON MANDATORY MICROSERVICES
-  # ==================================================================
-
   # 1. API Gateway & Round Robin Load Balancer
   api_gateway:
     build:
@@ -76,12 +49,10 @@ services:
       - "5001:5001"
     environment:
       - PORT=5001
-      - MONGO_URI=${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
+      - MONGO_URI=${MONGO_URI:?Set MONGO_URI to a MongoDB Atlas connection string}
       - JWT_SECRET=CampusSecuritySuperSecretKey2026!#@
     networks:
       - campus_network
-    depends_on:
-      - mongodb
 
   # 3. Authentication Microservice (Login & JWT)
   auth_service:
@@ -94,13 +65,11 @@ services:
       - "5002:5002"
     environment:
       - PORT=5002
-      - MONGO_URI=${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
+      - MONGO_URI=${MONGO_URI:?Set MONGO_URI to a MongoDB Atlas connection string}
       - JWT_SECRET=CampusSecuritySuperSecretKey2026!#@
       - JWT_SECRETE=CampusSecuritySuperSecretKey2026!#@
     networks:
       - campus_network
-    depends_on:
-      - mongodb
 
   # ==================================================================
   # TEAM MEMBER 1 SPECIFIC MICROSERVICES
@@ -117,12 +86,10 @@ services:
       - "5003:5003"
     environment:
       - PORT=5003
-      - MONGO_URI=${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
+      - MONGO_URI=${MONGO_URI:?Set MONGO_URI to a MongoDB Atlas connection string}
       - JWT_SECRET=CampusSecuritySuperSecretKey2026!#@
     networks:
       - campus_network
-    depends_on:
-      - mongodb
 
   # 5. Access Permission Microservice
   permission_service:
@@ -135,12 +102,10 @@ services:
       - "5004:5004"
     environment:
       - PORT=5004
-      - MONGO_URI=${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
+      - MONGO_URI=${MONGO_URI:?Set MONGO_URI to a MongoDB Atlas connection string}
       - JWT_SECRET=CampusSecuritySuperSecretKey2026!#@
     networks:
       - campus_network
-    depends_on:
-      - mongodb
 
   # ==================================================================
   # TEAM MEMBER 2 SPECIFIC MICROSERVICES (WITH LOAD BALANCED REPLICAS)
@@ -158,12 +123,10 @@ services:
     environment:
       - PORT=5005
       - INSTANCE_NAME=AccessLog-Instance-1
-      - MONGO_URI=${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
+      - MONGO_URI=${MONGO_URI:?Set MONGO_URI to a MongoDB Atlas connection string}
       - JWT_SECRET=CampusSecuritySuperSecretKey2026!#@
     networks:
       - campus_network
-    depends_on:
-      - mongodb
 
   # 6b. Access Log Microservice - Instance 2 (Load Balanced Replica)
   accesslog_service_2:
@@ -177,12 +140,10 @@ services:
     environment:
       - PORT=5015
       - INSTANCE_NAME=AccessLog-Instance-2
-      - MONGO_URI=${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
+      - MONGO_URI=${MONGO_URI:?Set MONGO_URI to a MongoDB Atlas connection string}
       - JWT_SECRET=CampusSecuritySuperSecretKey2026!#@
     networks:
       - campus_network
-    depends_on:
-      - mongodb
 
   # 7. Emergency Alert & Security Microservice
   emergency_service:
@@ -195,12 +156,10 @@ services:
       - "5006:5006"
     environment:
       - PORT=5006
-      - MONGO_URI=${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
+      - MONGO_URI=${MONGO_URI:?Set MONGO_URI to a MongoDB Atlas connection string}
       - JWT_SECRET=CampusSecuritySuperSecretKey2026!#@
     networks:
       - campus_network
-    depends_on:
-      - mongodb
   # 8. Student Service
   student_service:
     build:
@@ -212,7 +171,7 @@ services:
       - "5007:5007"
     environment:
       - PORT=5007
-      - MONGO_URI=${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
+      - MONGO_URI=${MONGO_URI:?Set MONGO_URI to a MongoDB Atlas connection string}
       - JWT_SECRET=CampusSecuritySuperSecretKey2026!#@
       - JWT_SECRETE=CampusSecuritySuperSecretKey2026!#@
     healthcheck:
@@ -223,8 +182,6 @@ services:
       start_period: 40s
     networks:
       - campus_network
-    depends_on:
-      - mongodb
   # 9. Teacher Service
   teacher_service:
     build:
@@ -236,7 +193,7 @@ services:
       - "5008:5008"
     environment:
       - PORT=5008
-      - MONGO_URI=${MONGO_URI:-mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0}
+      - MONGO_URI=${MONGO_URI:?Set MONGO_URI to a MongoDB Atlas connection string}
       - JWT_SECRET=CampusSecuritySuperSecretKey2026!#@
       - JWT_SECRETE=CampusSecuritySuperSecretKey2026!#@
     healthcheck:
@@ -247,5 +204,3 @@ services:
       start_period: 40s
     networks:
       - campus_network
-    depends_on:
-      - mongodb

@@ -1,5 +1,9 @@
 # Team Project Notes: Bugs Fixed & Architecture Improvements
 
+> **Current deployment note:** Kubernetes and Docker Compose use MongoDB Atlas
+> through the `MONGO_URI` environment variable. No MongoDB container is
+> deployed by this repository.
+
 > **Summary for Team Members**:
 > This note documents all the bugs, configuration traps, and enhancements made to the original midterm project codebase to ensure it builds cleanly on Docker, runs without connection errors on any machine (Local & AWS EC2), passes 100% of test cases in `test.md`, and includes a clean live demonstration interface.
 

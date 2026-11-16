@@ -3,6 +3,7 @@ const httpProxy = require('http-proxy');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const RoundRobinLoadBalancer = require('./load-balancer.js');
@@ -14,6 +15,7 @@ const proxy = httpProxy.createProxyServer({
 });
 
 const PORT = process.env.PORT || 4000;
+const LOG_FILE = process.env.LOG_FILE;
 const JWT_SECRET = process.env.JWT_SECRET || process.env.JWT_SECRETE || 'CampusSecuritySuperSecretKey2026!#@';
 
 // Upstream Target URLs
@@ -36,7 +38,15 @@ app.use(cors());
 
 // Request Logging Middleware
 app.use((req, res, next) => {
-    console.log(`[API Gateway] ${new Date().toISOString()} | ${req.method} ${req.originalUrl}`);
+    const message = `[API Gateway] ${new Date().toISOString()} | ${req.method} ${req.originalUrl}`;
+    console.log(message);
+    if (LOG_FILE) {
+        fs.appendFile(LOG_FILE, `${message}\n`, (err) => {
+            if (err) {
+                console.error(`[API Gateway] Unable to write request log: ${err.message}`);
+            }
+        });
+    }
     next();
 });
 

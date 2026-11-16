@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: campus-service-config
+  namespace: smart-campus
+data:
+  REGISTRATION_SERVICE_URL: http://registration-service:5001
+  AUTH_SERVICE_URL: http://authentication-service:5002
+  ROOM_SERVICE_URL: http://room-service:5003
+  PERMISSION_SERVICE_URL: http://permission-service:5004
+  ACCESS_LOG_INSTANCE_1: http://access-log-service-1:5005
+  ACCESS_LOG_INSTANCE_2: http://access-log-service-2:5015
+  EMERGENCY_SERVICE_URL: http://emergency-service:5006
+  STUDENT_SERVICE_URL: http://student-service:5007
+  TEACHER_SERVICE_URL: http://teacher-service:5008
