@@ -1,6 +1,7 @@
 # Smart Campus Access Control System & Distributed Microservices
 
-Midterm project implementing a containerized microservices architecture with an API Gateway, Round-Robin Load Balancing, Role-Based Access Control (RBAC), and database persistence using Docker Compose and MongoDB.
+Kubernetes microservices project implementing an API Gateway, round-robin load
+balancing, role-based access control, and MongoDB Atlas persistence.
 
 ---
 
@@ -8,7 +9,7 @@ Midterm project implementing a containerized microservices architecture with an 
 
 | Service                           |   Port   | Description                                                         | Responsibility |
 | --------------------------------- | :-------: | ------------------------------------------------------------------- | -------------- |
-| **MongoDB**                 | `27017` (loopback only) | Persistent Database Layer                                           | Shared Storage |
+| **MongoDB Atlas**           | Cloud   | Persistent Database Layer                                           | Cloud Storage |
 | **API Gateway**             | `4000` | Gateway & Reverse Proxy, Round-Robin Load Balancer, Live UI Console | Common Layer   |
 | **Registration Service**    | `5001` | User Account Registration & Card Provisioning                       | Common Layer   |
 | **Authentication Service**  | `5002` | JWT Token Issuance & Credential Verification                        | Common Layer   |
@@ -22,34 +23,10 @@ Midterm project implementing a containerized microservices architecture with an 
 
 ---
 
-## 2. Quick Start Guide for Group Members
+## 2. Quick Start Guide
 
-### Step 1: Configure and Start All Services
-
-Docker Compose uses the bundled MongoDB container by default. You do not need MongoDB Atlas credentials or AWS Academy access keys just to run the application.
-
-Optional: copy `.env.example` to `.env` and replace `JWT_SECRET` with a long random value before sharing or deploying publicly. The built-in default is for development only.
-
-From the project root directory, run:
-
-<<<<<<< HEAD
-```powershell
-$env:MONGO_URI = "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/UserData"
-docker compose up -d
-=======
-```bash
-docker compose up -d --build
->>>>>>> ba3f71a820fa25d3559069b6e2f30820ed130691
-```
-
-### Step 2: Verify All 11 Containers
-
-```bash
-docker compose ps
-docker compose logs --tail=100
-```
-
-Wait for the API Gateway and upstream services to become healthy. If a service is restarting or unhealthy, inspect it with `docker compose logs <service_name>`.
+Follow [`final_readme.md`](./final_readme.md) for Docker Desktop Kubernetes
+deployment, MongoDB Atlas configuration, and the presentation demonstration.
 ---
 
 ## 3. How to Test the Project
@@ -83,41 +60,13 @@ This tests all 19 assertions defined in `test.md` and outputs a complete pass/fa
 
 ---
 
-### Method C: Manual Postman Testing (For Screenshots)
-
-Refer to **[`test.md`](./test.md)** for the complete list of endpoints, JSON payloads, expected status codes, and headers required for assignment submission:
-
-1. `POST /reg` (Registration)
-2. `POST /login` (Login & JWT issuance)
-3. `POST /api/rooms` (Room creation with Bearer token)
-4. Negative Cases (Wrong password, missing token, tampered token, unauthorized student role)
-5. `POST /api/logs/swipe` (Door swipe & round-robin load balancing verification)
-
----
-
-## 4. Useful Docker Commands
-
-- **Stop all services**:
-  ```bash
-  docker compose down
-  ```
-- **View live logs of a specific service**:
-  ```bash
-  docker compose logs -f api_gateway
-  docker compose logs -f accesslog_service_1 accesslog_service_2
-  ```
-- **Rebuild after making code changes**:
-  ```bash
-  docker compose up -d --build
-  ```
-
-<<<<<<< HEAD
-## 5. Kubernetes / Minikube Deployment
+## 4. Kubernetes Deployment
 
 The Kubernetes manifests are in [`k8s/`](./k8s/). They deploy all application
 containers, keep the microservices private as `ClusterIP` Services, and expose
-only the API Gateway. MongoDB is not deployed in Kubernetes; use a MongoDB
-Atlas connection string in [`k8s/02-secret.yaml`](./k8s/02-secret.yaml).
+only the API Gateway. MongoDB is not deployed in Kubernetes; use the ignored
+root `.env` file to create the Kubernetes Secret. The safe template is
+[`k8s/02-secret.example.yaml`](./k8s/02-secret.example.yaml).
 
 ### Build and deploy locally with Minikube
 
@@ -138,9 +87,9 @@ kubectl apply -f k8s/
 kubectl -n smart-campus get pods,services,ingress
 ```
 
-Before applying, replace the two placeholder values in
-[`k8s/02-secret.yaml`](./k8s/02-secret.yaml) with a MongoDB Atlas URI and a
-long random JWT secret. The Ingress is configured for `aupp.com` for Fanout
+Before applying, load the MongoDB Atlas URI from `.env` into a Kubernetes
+Secret and set a long random JWT secret. The Ingress is configured for
+`aupp.com` for Fanout
 DNS. For a local demonstration, point `aupp.com` to the Minikube ingress IP in
 your DNS provider or hosts file, then open `http://aupp.com/`.
 
@@ -152,19 +101,6 @@ Kubernetes volume:
 ```powershell
 kubectl -n smart-campus logs deploy/api-gateway -c log-reader
 ```
-=======
 
-## 5. EC2 Deployment Notes
-
-- Install Docker Engine and the Docker Compose plugin on the EC2 instance, then copy/clone this project.
-- Run `docker compose up -d --build` from the directory containing `docker-compose.yml`.
-- In the EC2 security group, allow inbound TCP `4000` only from the IPs that need the demo (or use a reverse proxy on `80/443`). Allow SSH `22` only from your trusted IP. Do not open ports `27017` or `5001`–`5015` publicly.
-- Only the gateway is published on all host interfaces. MongoDB and service ports are bound to `127.0.0.1` for local diagnostics; internal service-to-service traffic uses Docker DNS names.
-- Browse to `http://<EC2-PUBLIC-IP>:4000/`, not `http://localhost:4000/` on your own computer. Ensure the EC2 security group and host firewall allow the chosen gateway port.
-- An AWS Academy access key is not required by this Compose application. AWS Academy temporary credentials may be needed to create/manage AWS resources via the console, CLI, or SDK. SSH access uses the EC2 key pair or another configured SSH method, not the AWS API access key.
-- The default MongoDB data is stored in the named Docker volume `mongodb_data`. Back it up before deleting volumes.
-
-## 6. Known Limits
-
-This package can be statically checked here, but it was not possible to run a real Docker build or end-to-end container test in this environment because Docker Engine is unavailable. Verify on your machine with the commands above before submitting.
->>>>>>> ba3f71a820fa25d3559069b6e2f30820ed130691
+For the complete presentation and verification sequence, see
+[`final_readme.md`](./final_readme.md).

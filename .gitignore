@@ -23,3 +23,6 @@ Thumbs.db
 **/.env
 **/.env.*
 !**/.env.example
+
+# Kubernetes Secret manifests contain environment-specific credentials.
+k8s/02-secret.yaml

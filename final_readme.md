@@ -29,12 +29,6 @@ Kubernetes manifests are in [`k8s/`](D:/Agent/cld/midterm/k8s).
 The local `.env` file contains the MongoDB Atlas connection string. It is
 ignored by Git and must never be committed or shared.
 
-For Docker Compose:
-
-```powershell
-docker compose up -d
-```
-
 For Kubernetes, create the cluster Secret from `.env` and add a JWT secret:
 
 ```powershell
@@ -44,8 +38,8 @@ kubectl -n smart-campus create secret generic campus-secrets `
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-Do not apply [`k8s/02-secret.yaml`](D:/Agent/cld/midterm/k8s/02-secret.yaml)
-after creating this Secret unless its placeholders have been replaced.
+[`k8s/02-secret.example.yaml`](D:/Agent/cld/midterm/k8s/02-secret.example.yaml)
+documents the Secret shape, but should not be applied with placeholder values.
 
 ## Docker Desktop Kubernetes Deployment
 
@@ -226,5 +220,4 @@ kubectl -n smart-campus logs deployment/api-gateway -c log-reader
 ```
 
 The detailed endpoint and expected-response checks are in
-[`test.md`](D:/Agent/cld/midterm/test.md), and the Postman requests are in
-[`postman_collection_reg_auth_accesslog.json`](D:/Agent/cld/midterm/postman_collection_reg_auth_accesslog.json).
+[`test.md`](D:/Agent/cld/midterm/test.md).
