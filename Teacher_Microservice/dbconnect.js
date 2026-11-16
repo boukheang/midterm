@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 // Database Connection URL
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://vanpanhavanchhoeun_db_user:0Y2cnQcKNsdAa8Xx@cluster0.5fxh7yq.mongodb.net/UserData?appName=Cluster0";
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/smart_campus_access_db';
 
 const clientOptions = {
     serverSelectionTimeoutMS: 5000,
@@ -10,11 +10,17 @@ const clientOptions = {
 };
 
 async function connectDB() {
-    try {
-        await mongoose.connect(MONGO_URI, clientOptions);
-        console.log(`[Teacher Service] Connected successfully to MongoDB at: ${MONGO_URI.split('@').pop()}`);
-    } catch (err) {
-        console.error(`[Teacher Service] MongoDB Connection Error: ${err.message}`);
+    // Retry until MongoDB is reachable. This is useful during container startup
+    // and avoids silently giving up after a temporary connection failure.
+    while (true) {
+        try {
+            await mongoose.connect(MONGO_URI, clientOptions);
+            console.log('[Teacher Service] Connected to MongoDB.');
+            return;
+        } catch (err) {
+            console.error('[Teacher Service] MongoDB connection failed; retrying in 5 seconds:', err.message);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+        }
     }
 }
 

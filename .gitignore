@@ -17,3 +17,9 @@ npm-debug.log*
 # Operating System Files
 .DS_Store
 Thumbs.db
+
+# Environment templates may be committed; real environment files must not be.
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
