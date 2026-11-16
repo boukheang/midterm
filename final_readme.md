@@ -74,15 +74,15 @@ kubectl apply -f .\k8s\00-namespace.yaml
 kubectl apply -f .\k8s\01-config.yaml
 kubectl apply -f .\k8s\03-storage.yaml
 kubectl apply -f .\k8s\10-services.yaml
-kubectl apply -f .\k8s\20-deployments.yaml
-kubectl apply -f .\k8s\21-gateway-deployment.yaml
-kubectl apply -f .\k8s\30-ingress.yaml
 ```
 
 Then create the Secret from `.env` using the command above. Check the
-deployment:
+application deployments and Ingress:
 
 ```powershell
+kubectl apply -f .\k8s\20-deployments.yaml
+kubectl apply -f .\k8s\21-gateway-deployment.yaml
+kubectl apply -f .\k8s\30-ingress.yaml
 kubectl -n smart-campus get pods
 kubectl -n smart-campus get services
 kubectl -n smart-campus get pvc
