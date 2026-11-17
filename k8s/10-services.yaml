@@ -1,121 +1,147 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: api-gateway
-  namespace: smart-campus
-spec:
-  type: LoadBalancer
-  selector:
-    app: api-gateway
-  ports:
-    - name: http
-      port: 4000
-      targetPort: 4000
----
+# Internal ClusterIP Services - only reachable inside the cluster.
 apiVersion: v1
 kind: Service
 metadata:
   name: registration-service
   namespace: smart-campus
+  labels:
+    app: registration-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   selector:
     app: registration-service
   ports:
-    - port: 5001
-      targetPort: 5001
+    - name: http
+      port: 5001
+      targetPort: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: authentication-service
   namespace: smart-campus
+  labels:
+    app: authentication-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   selector:
     app: authentication-service
   ports:
-    - port: 5002
-      targetPort: 5002
+    - name: http
+      port: 5002
+      targetPort: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: room-service
   namespace: smart-campus
+  labels:
+    app: room-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   selector:
     app: room-service
   ports:
-    - port: 5003
-      targetPort: 5003
+    - name: http
+      port: 5003
+      targetPort: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: permission-service
   namespace: smart-campus
+  labels:
+    app: permission-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   selector:
     app: permission-service
   ports:
-    - port: 5004
-      targetPort: 5004
+    - name: http
+      port: 5004
+      targetPort: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: access-log-service-1
+  name: access-log-service
   namespace: smart-campus
+  labels:
+    app: access-log-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   selector:
-    app: access-log-service-1
+    app: access-log-service
   ports:
-    - port: 5005
-      targetPort: 5005
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: access-log-service-2
-  namespace: smart-campus
-spec:
-  selector:
-    app: access-log-service-2
-  ports:
-    - port: 5015
-      targetPort: 5015
+    - name: http
+      port: 5005
+      targetPort: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: emergency-service
   namespace: smart-campus
+  labels:
+    app: emergency-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   selector:
     app: emergency-service
   ports:
-    - port: 5006
-      targetPort: 5006
+    - name: http
+      port: 5006
+      targetPort: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: student-service
   namespace: smart-campus
+  labels:
+    app: student-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   selector:
     app: student-service
   ports:
-    - port: 5007
-      targetPort: 5007
+    - name: http
+      port: 5007
+      targetPort: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: teacher-service
   namespace: smart-campus
+  labels:
+    app: teacher-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   selector:
     app: teacher-service
   ports:
-    - port: 5008
-      targetPort: 5008
+    - name: http
+      port: 5008
+      targetPort: http
+---
+# Headless Service: DNS returns one A record per *ready* Access Log pod.
+# The API Gateway uses it for its round-robin load balancer.
+apiVersion: v1
+kind: Service
+metadata:
+  name: access-log-headless
+  namespace: smart-campus
+  labels:
+    app: access-log-service
+    app.kubernetes.io/part-of: smart-campus
+spec:
+  clusterIP: None
+  selector:
+    app: access-log-service
+  ports:
+    - name: http
+      port: 5005
+      targetPort: http

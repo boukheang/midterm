@@ -335,7 +335,7 @@
         /* Load Balancer Visualization */
         .lb-pool {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
             gap: 14px;
             margin-bottom: 20px;
         }
@@ -363,9 +363,10 @@
         }
 
         .lb-node-name {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             font-family: var(--font-mono);
+            overflow-wrap: anywhere;
         }
 
         .lb-node-metric {
@@ -600,7 +601,6 @@
                         <select class="form-control" id="regRole">
                             <option value="student" selected>Student</option>
                             <option value="faculty">Faculty</option>
-                            <option value="admin">Admin</option>
                         </select>
                     </div>
                 </div>
@@ -676,23 +676,10 @@
                 <div class="card-body">
 
                     <!-- Load Balancer Nodes -->
-                    <div class="lb-pool">
-                        <div class="lb-node" id="nodeInstance1">
-                            <div class="lb-node-header">
-                                <span class="lb-node-name">AccessLog-Instance-1</span>
-                                <span class="pill pill-green">Port 5005</span>
-                            </div>
-                            <div class="lb-node-metric" id="countInstance1">0</div>
-                            <div class="lb-node-sub">Requests Handled (<span id="pctInstance1">0%</span>)</div>
-                        </div>
-
-                        <div class="lb-node" id="nodeInstance2">
-                            <div class="lb-node-header">
-                                <span class="lb-node-name">AccessLog-Instance-2</span>
-                                <span class="pill pill-green">Port 5015</span>
-                            </div>
-                            <div class="lb-node-metric" id="countInstance2">0</div>
-                            <div class="lb-node-sub">Requests Handled (<span id="pctInstance2">0%</span>)</div>
+                    <div class="lb-pool" id="lbPool">
+                        <div class="lb-node">
+                            <div class="lb-node-header"><span class="lb-node-name">Waiting for first swipe...</span></div>
+                            <div class="lb-node-sub">Each Access Log pod appears here as it handles traffic.</div>
                         </div>
                     </div>
 
@@ -987,10 +974,8 @@
         let currentToken = '';
         let currentUser = null;
 
-        let nodeCounts = {
-            'AccessLog-Instance-1': 0,
-            'AccessLog-Instance-2': 0
-        };
+        // Requests handled per Access Log pod (keys are pod names reported by the service)
+        let nodeCounts = {};
 
         // Initialize On Load
         window.addEventListener('DOMContentLoaded', async () => {
@@ -1087,7 +1072,7 @@
                 let data = await res.json();
 
                 // If user doesn't exist and is one of the default demo accounts, auto-register and retry
-                if (!res.ok && (email === 'admin@campus.edu' || email === 'faculty@campus.edu' || email === 'student@campus.edu')) {
+                if (!res.ok && (email === 'faculty@campus.edu' || email === 'student@campus.edu')) {
                     const fallbackRole = role || (email.split('@')[0]);
                     await fetch('/reg', {
                         method: 'POST',
@@ -1205,51 +1190,6 @@
                 }
             } catch (err) {
                 feedback.innerHTML = `<span style="color:var(--status-red-text);">Error: ${err.message}</span>`;
-            }
-        }
-
-        async function switchUserRole(role) {
-            currentRole = role;
-            const email = role === 'admin' ? 'admin@campus.edu' : `${role}@campus.edu`;
-            const name = role.charAt(0).toUpperCase() + role.slice(1) + ' User';
-
-            // Auto-register if not exists
-            await fetch('/reg', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: name,
-                    email: email,
-                    password: 'Password123!',
-                    role: role,
-                    department: role === 'admin' ? 'Security' : 'Engineering'
-                })
-            });
-
-            // Login
-            const res = await fetch('/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: email,
-                    password: 'Password123!',
-                    role: role
-                })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                currentToken = data.token;
-                currentUser = {
-                    name: name,
-                    email: email,
-                    role: role
-                };
-                sessionStorage.setItem('campus_jwt', currentToken);
-                sessionStorage.setItem('campus_user', JSON.stringify(currentUser));
-                updateSessionUI();
-                applyRolePermissions(role);
-                await loadRoomInventory();
             }
         }
 
@@ -1980,8 +1920,8 @@
             }
 
             // Update Metrics & Pulse Animation
-            if (nodeCounts[servedByInstance] !== undefined) {
-                nodeCounts[servedByInstance]++;
+            if (servedByInstance && servedByInstance !== 'Unknown-Instance') {
+                nodeCounts[servedByInstance] = (nodeCounts[servedByInstance] || 0) + 1;
             }
 
             updateLoadBalancerMetrics(servedByInstance);
@@ -2032,26 +1972,18 @@
         }
 
         function updateLoadBalancerMetrics(highlightInstance) {
-            const total = nodeCounts['AccessLog-Instance-1'] + nodeCounts['AccessLog-Instance-2'];
-            const pct1 = total > 0 ? ((nodeCounts['AccessLog-Instance-1'] / total) * 100).toFixed(0) : '0';
-            const pct2 = total > 0 ? ((nodeCounts['AccessLog-Instance-2'] / total) * 100).toFixed(0) : '0';
-
-            document.getElementById('countInstance1').innerText = nodeCounts['AccessLog-Instance-1'];
-            document.getElementById('countInstance2').innerText = nodeCounts['AccessLog-Instance-2'];
-            document.getElementById('pctInstance1').innerText = `${pct1}%`;
-            document.getElementById('pctInstance2').innerText = `${pct2}%`;
-
-            const node1 = document.getElementById('nodeInstance1');
-            const node2 = document.getElementById('nodeInstance2');
-
-            node1.classList.remove('active-routing');
-            node2.classList.remove('active-routing');
-
-            if (highlightInstance === 'AccessLog-Instance-1') {
-                node1.classList.add('active-routing');
-            } else if (highlightInstance === 'AccessLog-Instance-2') {
-                node2.classList.add('active-routing');
-            }
+            const pool = document.getElementById('lbPool');
+            const names = Object.keys(nodeCounts).sort();
+            if (!pool || names.length === 0) return;
+            const total = names.reduce((sum, n) => sum + nodeCounts[n], 0);
+            pool.innerHTML = names.map(name => {
+                const pct = total > 0 ? ((nodeCounts[name] / total) * 100).toFixed(0) : '0';
+                return `<div class="lb-node${name === highlightInstance ? ' active-routing' : ''}">
+                    <div class="lb-node-header"><span class="lb-node-name">${escapeHtml(name)}</span><span class="pill pill-green">Pod</span></div>
+                    <div class="lb-node-metric">${nodeCounts[name]}</div>
+                    <div class="lb-node-sub">Requests Handled (${pct}%)</div>
+                </div>`;
+            }).join('');
         }
 
         async function fetchLoadBalancerStats() {
@@ -2062,10 +1994,9 @@
                 if (res.ok) {
                     const data = await res.json();
                     if (data.stats && data.stats.instances) {
+                        nodeCounts = {};
                         data.stats.instances.forEach(inst => {
-                            if (nodeCounts[inst.name] !== undefined) {
-                                nodeCounts[inst.name] = inst.requestCount;
-                            }
+                            nodeCounts[inst.name] = inst.requestCount;
                         });
                         updateLoadBalancerMetrics();
                     }
@@ -2082,7 +2013,9 @@
 
             terminal.innerHTML = `<div class="terminal-line"><span class="terminal-key">// Starting test.md execution pipeline...</span></div>`;
 
+            let failedChecks = 0;
             function logLine(text, isPass = null) {
+                if (isPass === false) failedChecks++;
                 let color = 'var(--text-secondary)';
                 if (isPass === true) color = 'var(--status-green-text)';
                 if (isPass === false) color = 'var(--status-red-text)';
@@ -2097,14 +2030,20 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        name: 'Admin Director',
-                        email: `admin_${Date.now()}@campus.edu`,
+                        name: 'Faculty Tester',
+                        email: `faculty_${Date.now()}@campus.edu`,
                         password: 'Password123!',
-                        role: 'admin',
-                        department: 'Campus Security'
+                        role: 'faculty',
+                        department: 'Engineering'
                     })
                 });
-                logLine(`[PASS] 1. Registration Status: ${testReg.status} Created`, testReg.status === 201);
+                logLine(`[${testReg.status === 201 ? 'PASS' : 'FAIL'}] 1.1 Public Faculty Registration: ${testReg.status} Created`, testReg.status === 201);
+                const adminSelfReg = await fetch('/reg', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: 'Intruder', email: `intruder_${Date.now()}@campus.edu`, password: 'Password123!', role: 'admin' })
+                });
+                logLine(`[${adminSelfReg.status === 403 ? 'PASS' : 'FAIL'}] 1.2 Public Admin Sign-up Blocked: ${adminSelfReg.status} Forbidden`, adminSelfReg.status === 403);
 
                 // 2. Login
                 logLine('--- 2. Testing Login & Token (POST /login) ---');
@@ -2203,10 +2142,10 @@
                 const alternated = instA !== instB;
                 logLine(`[PASS] 5.1 Swipe A served by: ${instA}`, true);
                 logLine(`[PASS] 5.2 Swipe B served by: ${instB}`, true);
-                logLine(`[PASS] 5.3 Round-Robin Alternation Verified (${instA} -> ${instB})`, alternated);
+                logLine(`[${alternated ? 'PASS' : 'FAIL'}] 5.3 Round-Robin Alternation (${instA} -> ${instB})`, alternated);
 
-                badge.innerText = 'All Checks Passed (100%)';
-                badge.className = 'badge badge-live';
+                badge.innerText = failedChecks === 0 ? 'All Checks Passed (100%)' : `${failedChecks} Check(s) Failed`;
+                badge.className = failedChecks === 0 ? 'badge badge-live' : 'badge badge-danger';
                 await loadRoomInventory();
 
             } catch (err) {

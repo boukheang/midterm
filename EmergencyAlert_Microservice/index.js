@@ -1,52 +1,50 @@
 const express = require('express');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
-const app = express();
-app.use(express.json());
-
-const db = require('./dbconnect.js');
+const { connectDB } = require('../shared/db');
+const { registerHealthRoutes, requireRole, generateId, exactInsensitive, clampInt, startServer } = require('../shared/service');
 const AlertModel = require('./alert_schema.js');
 
+const app = express();
+app.use(express.json({ limit: '100kb' }));
+
 const PORT = process.env.PORT || 5006;
+const db = mongoose;
 
-function generateId(prefix = 'ALERT') {
-    const rand = Math.floor(100 + Math.random() * 900);
-    return `${prefix}-${Date.now().toString().slice(-4)}${rand}`;
+connectDB(mongoose, 'Emergency Service');
+registerHealthRoutes(app, mongoose, { service: 'Emergency Alert & Security Microservice', port: PORT });
+
+// Every alert API needs an authenticated identity from the gateway; admin-only
+// routes add requireRole('admin') below (defence in depth).
+app.use('/api/alerts', requireRole('admin', 'faculty', 'student'));
+const adminOnly = requireRole('admin');
+
+function buildingFilter(building) {
+    return building && building !== 'ALL' ? { building: exactInsensitive(building) } : {};
 }
-
-// ----------------------------------------------------
-// Health Check API
-// ----------------------------------------------------
-app.get('/health', (req, res) => {
-    return res.status(200).json({
-        service: 'Emergency Alert & Security Microservice (Team Member 2)',
-        status: 'UP',
-        port: PORT,
-        timestamp: new Date().toISOString()
-    });
-});
 
 // ----------------------------------------------------
 // TRIGGER EMERGENCY LOCKDOWN (Admin)
 // POST /api/alerts/lockdown
 // ----------------------------------------------------
-app.post('/api/alerts/lockdown', async (req, res) => {
+app.post('/api/alerts/lockdown', adminOnly, async (req, res) => {
     try {
         const {
             building = 'ALL',
             description = 'Campus security lockdown activated',
-            severity = 'CRITICAL',
-            triggeredBy = 'SECURITY_ADMIN'
+            severity = 'CRITICAL'
         } = req.body;
+        const triggeredBy = req.identity.email;
 
         const alertId = generateId('ALERT');
         const newAlert = new AlertModel({
             _id: alertId,
             alertType: building === 'ALL' ? 'CAMPUS_LOCKDOWN' : 'BUILDING_LOCKDOWN',
-            building: building.trim(),
-            description: description.trim(),
-            severity: severity.toUpperCase().trim(),
-            triggeredBy: triggeredBy.trim(),
+            building: String(building).trim(),
+            description: String(description).trim(),
+            severity: String(severity).toUpperCase().trim(),
+            triggeredBy,
             status: 'ACTIVE'
         });
 
@@ -55,11 +53,7 @@ app.post('/api/alerts/lockdown', async (req, res) => {
         // Automatically update the rooms collection to set isEmergencyLocked = true
         let affectedRooms = 0;
         try {
-            const roomQuery = {};
-            if (building && building !== 'ALL') {
-                roomQuery.building = new RegExp(`^${building}$`, 'i');
-            }
-            const updateResult = await db.connection.collection('rooms').updateMany(roomQuery, {
+            const updateResult = await db.connection.collection('rooms').updateMany(buildingFilter(building), {
                 $set: { isEmergencyLocked: true }
             });
             affectedRooms = updateResult.modifiedCount;
@@ -88,14 +82,15 @@ app.post('/api/alerts/lockdown', async (req, res) => {
 // LIFT EMERGENCY LOCKDOWN (Admin)
 // POST /api/alerts/lift
 // ----------------------------------------------------
-app.post('/api/alerts/lift', async (req, res) => {
+app.post('/api/alerts/lift', adminOnly, async (req, res) => {
     try {
         const {
             alertId,
             building = 'ALL',
-            resolvedBy = 'SECURITY_ADMIN',
             resolutionNotes = 'All clear confirmed by campus safety.'
         } = req.body;
+
+        const resolvedBy = req.identity.email;
 
         // Find and resolve the alert
         const query = { status: 'ACTIVE' };
@@ -121,11 +116,7 @@ app.post('/api/alerts/lift', async (req, res) => {
         // Reset rooms emergency lock in rooms collection
         let unlockedRooms = 0;
         try {
-            const roomQuery = {};
-            if (building && building !== 'ALL') {
-                roomQuery.building = new RegExp(`^${building}$`, 'i');
-            }
-            const updateResult = await db.connection.collection('rooms').updateMany(roomQuery, {
+            const updateResult = await db.connection.collection('rooms').updateMany(buildingFilter(building), {
                 $set: { isEmergencyLocked: false }
             });
             unlockedRooms = updateResult.modifiedCount;
@@ -181,8 +172,7 @@ app.post('/api/alerts/report', async (req, res) => {
             alertType = 'SUSPICIOUS_ACTIVITY',
             building,
             description,
-            severity = 'MEDIUM',
-            reportedBy
+            severity = 'MEDIUM'
         } = req.body;
 
         if (!description) {
@@ -194,11 +184,14 @@ app.post('/api/alerts/report', async (req, res) => {
 
         const incident = new AlertModel({
             _id: generateId('INCIDENT'),
-            alertType: alertType.toUpperCase().trim(),
+            // Lockdown types can only be created through /lockdown by an admin.
+            alertType: ['CAMPUS_LOCKDOWN', 'BUILDING_LOCKDOWN'].includes(String(alertType).toUpperCase().trim())
+                ? 'SUSPICIOUS_ACTIVITY'
+                : String(alertType).toUpperCase().trim(),
             building: (building || 'CAMPUS').trim(),
-            description: description.trim(),
-            severity: severity.toUpperCase().trim(),
-            triggeredBy: reportedBy || 'CAMPUS_MEMBER',
+            description: String(description).trim(),
+            severity: String(severity).toUpperCase().trim(),
+            triggeredBy: req.identity.email,
             status: 'ACTIVE'
         });
 
@@ -223,9 +216,10 @@ app.post('/api/alerts/report', async (req, res) => {
 // VIEW ALL ALERTS & INCIDENT HISTORY (Admin)
 // GET /api/alerts/history
 // ----------------------------------------------------
-app.get('/api/alerts/history', async (req, res) => {
+app.get('/api/alerts/history', adminOnly, async (req, res) => {
     try {
-        const { status, severity, limit = 50 } = req.query;
+        const { status, severity } = req.query;
+        const limit = clampInt(req.query.limit, 50, 1, 500);
         const filter = {};
 
         if (status) filter.status = status.toUpperCase();
@@ -233,7 +227,8 @@ app.get('/api/alerts/history', async (req, res) => {
 
         const history = await AlertModel.find(filter)
             .sort({ createdAt: -1 })
-            .limit(Number(limit));
+            .limit(limit)
+            .lean();
 
         return res.status(200).json({
             success: true,
@@ -252,7 +247,7 @@ app.get('/api/alerts/history', async (req, res) => {
 // DELETE / DISMISS ALERT (Admin)
 // DELETE /api/alerts/:id
 // ----------------------------------------------------
-app.delete('/api/alerts/:id', async (req, res) => {
+app.delete('/api/alerts/:id', adminOnly, async (req, res) => {
     try {
         const deleted = await AlertModel.findByIdAndDelete(req.params.id);
         if (!deleted) {
@@ -275,8 +270,6 @@ app.delete('/api/alerts/:id', async (req, res) => {
 });
 
 // Start Express Server
-app.listen(PORT, () => {
-    console.log(`[Emergency Service] Running on PORT: ${PORT}`);
-});
+startServer(app, PORT, 'Emergency Service');
 
 module.exports = app;

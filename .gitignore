@@ -26,3 +26,6 @@ Thumbs.db
 
 # Kubernetes Secret manifests contain environment-specific credentials.
 k8s/02-secret.yaml
+
+# Image tag of the last local build (written by scripts/build-images.ps1)
+scripts/.image-tag

@@ -1,0 +1,14 @@
+# Build context is the repository root (so images can include shared/).
+**/node_modules
+**/npm-debug.log*
+**/.env
+**/.env.*
+!**/.env.example
+.git
+k8s
+*.md
+*.pptx
+*.py
+postman_*.json
+docker-compose.yml
+run_tests.js

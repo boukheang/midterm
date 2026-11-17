@@ -1,0 +1,34 @@
+# Login account for the Kubernetes Dashboard (local demo use only).
+# It has cluster-admin rights, so only apply it on a local demo cluster.
+#
+# Get the login token:
+#   kubectl -n kubernetes-dashboard get secret dashboard-admin-token -o jsonpath="{.data.token}"
+#   (base64-decode it - scripts/dashboard.ps1 does this for you)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dashboard-admin
+  namespace: kubernetes-dashboard
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dashboard-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: dashboard-admin
+    namespace: kubernetes-dashboard
+---
+# Long-lived token so the demo login does not expire mid-presentation.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dashboard-admin-token
+  namespace: kubernetes-dashboard
+  annotations:
+    kubernetes.io/service-account.name: dashboard-admin
+type: kubernetes.io/service-account-token

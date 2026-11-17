@@ -1,15 +1,23 @@
+# Non-secret settings shared by the API Gateway and services.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: campus-service-config
   namespace: smart-campus
+  labels:
+    app.kubernetes.io/part-of: smart-campus
 data:
+  NODE_ENV: production
   REGISTRATION_SERVICE_URL: http://registration-service:5001
   AUTH_SERVICE_URL: http://authentication-service:5002
   ROOM_SERVICE_URL: http://room-service:5003
   PERMISSION_SERVICE_URL: http://permission-service:5004
-  ACCESS_LOG_INSTANCE_1: http://access-log-service-1:5005
-  ACCESS_LOG_INSTANCE_2: http://access-log-service-2:5015
   EMERGENCY_SERVICE_URL: http://emergency-service:5006
   STUDENT_SERVICE_URL: http://student-service:5007
   TEACHER_SERVICE_URL: http://teacher-service:5008
+  # The gateway resolves this headless Service to one IP per ready Access Log pod
+  # and round-robins across them (scales automatically with the HPA).
+  ACCESS_LOG_DNS: access-log-headless.smart-campus.svc.cluster.local
+  ACCESS_LOG_PORT: "5005"
+  # Fallback if DNS discovery is unavailable: the normal ClusterIP Service.
+  ACCESS_LOG_INSTANCES: http://access-log-service:5005

@@ -1,10 +1,16 @@
+# Backend microservices. Generated from one template so every service has the
+# same probes, resource limits and security settings.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: registration-service
   namespace: smart-campus
+  labels:
+    app: registration-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: registration-service
@@ -12,46 +18,82 @@ spec:
     metadata:
       labels:
         app: registration-service
+        app.kubernetes.io/part-of: smart-campus
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: registration
           image: smart-campus/registration:local
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5001
+            - name: http
+              containerPort: 5001
+          envFrom:
+            - configMapRef:
+                name: campus-service-config
           env:
             - name: PORT
               value: "5001"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
                   name: campus-secrets
                   key: MONGO_URI
-            - name: JWT_SECRET
+            - name: ADMIN_EMAIL
               valueFrom:
                 secretKeyRef:
                   name: campus-secrets
-                  key: JWT_SECRET
+                  key: ADMIN_EMAIL
+                  optional: true
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: campus-secrets
+                  key: ADMIN_PASSWORD
+                  optional: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          # /health checks MongoDB too: the pod only receives traffic once the DB is reachable.
           readinessProbe:
             httpGet:
               path: /health
-              port: 5001
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
+          # /livez only checks the process, so a DB outage does not cause restart loops.
           livenessProbe:
             httpGet:
-              path: /health
-              port: 5001
-            initialDelaySeconds: 20
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
             periodSeconds: 20
+            failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: authentication-service
   namespace: smart-campus
+  labels:
+    app: authentication-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: authentication-service
@@ -59,16 +101,28 @@ spec:
     metadata:
       labels:
         app: authentication-service
+        app.kubernetes.io/part-of: smart-campus
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: authentication
           image: smart-campus/authentication:local
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5002
+            - name: http
+              containerPort: 5002
+          envFrom:
+            - configMapRef:
+                name: campus-service-config
           env:
             - name: PORT
               value: "5002"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
@@ -79,26 +133,43 @@ spec:
                 secretKeyRef:
                   name: campus-secrets
                   key: JWT_SECRET
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          # /health checks MongoDB too: the pod only receives traffic once the DB is reachable.
           readinessProbe:
             httpGet:
               path: /health
-              port: 5002
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
+          # /livez only checks the process, so a DB outage does not cause restart loops.
           livenessProbe:
             httpGet:
-              path: /health
-              port: 5002
-            initialDelaySeconds: 20
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
             periodSeconds: 20
+            failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: room-service
   namespace: smart-campus
+  labels:
+    app: room-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: room-service
@@ -106,46 +177,70 @@ spec:
     metadata:
       labels:
         app: room-service
+        app.kubernetes.io/part-of: smart-campus
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: room
           image: smart-campus/room:local
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5003
+            - name: http
+              containerPort: 5003
+          envFrom:
+            - configMapRef:
+                name: campus-service-config
           env:
             - name: PORT
               value: "5003"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
                   name: campus-secrets
                   key: MONGO_URI
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: campus-secrets
-                  key: JWT_SECRET
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          # /health checks MongoDB too: the pod only receives traffic once the DB is reachable.
           readinessProbe:
             httpGet:
               path: /health
-              port: 5003
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
+          # /livez only checks the process, so a DB outage does not cause restart loops.
           livenessProbe:
             httpGet:
-              path: /health
-              port: 5003
-            initialDelaySeconds: 20
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
             periodSeconds: 20
+            failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: permission-service
   namespace: smart-campus
+  labels:
+    app: permission-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: permission-service
@@ -153,144 +248,141 @@ spec:
     metadata:
       labels:
         app: permission-service
+        app.kubernetes.io/part-of: smart-campus
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: permission
           image: smart-campus/permission:local
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5004
+            - name: http
+              containerPort: 5004
+          envFrom:
+            - configMapRef:
+                name: campus-service-config
           env:
             - name: PORT
               value: "5004"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
                   name: campus-secrets
                   key: MONGO_URI
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: campus-secrets
-                  key: JWT_SECRET
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          # /health checks MongoDB too: the pod only receives traffic once the DB is reachable.
           readinessProbe:
             httpGet:
               path: /health
-              port: 5004
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
+          # /livez only checks the process, so a DB outage does not cause restart loops.
           livenessProbe:
             httpGet:
-              path: /health
-              port: 5004
-            initialDelaySeconds: 20
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
             periodSeconds: 20
+            failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: access-log-service-1
+  name: access-log-service
   namespace: smart-campus
+  labels:
+    app: access-log-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
-  replicas: 1
+  replicas: 2
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
-      app: access-log-service-1
+      app: access-log-service
   template:
     metadata:
       labels:
-        app: access-log-service-1
+        app: access-log-service
+        app.kubernetes.io/part-of: smart-campus
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: access-log
           image: smart-campus/access-log:local
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5005
+            - name: http
+              containerPort: 5005
+          envFrom:
+            - configMapRef:
+                name: campus-service-config
           env:
             - name: PORT
               value: "5005"
-            - name: INSTANCE_NAME
-              value: AccessLog-Instance-1
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
                   name: campus-secrets
                   key: MONGO_URI
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: campus-secrets
-                  key: JWT_SECRET
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          # /health checks MongoDB too: the pod only receives traffic once the DB is reachable.
           readinessProbe:
             httpGet:
               path: /health
-              port: 5005
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
+          # /livez only checks the process, so a DB outage does not cause restart loops.
           livenessProbe:
             httpGet:
-              path: /health
-              port: 5005
-            initialDelaySeconds: 20
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
             periodSeconds: 20
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: access-log-service-2
-  namespace: smart-campus
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: access-log-service-2
-  template:
-    metadata:
-      labels:
-        app: access-log-service-2
-    spec:
-      containers:
-        - name: access-log
-          image: smart-campus/access-log:local
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 5015
-          env:
-            - name: PORT
-              value: "5015"
-            - name: INSTANCE_NAME
-              value: AccessLog-Instance-2
-            - name: MONGO_URI
-              valueFrom:
-                secretKeyRef:
-                  name: campus-secrets
-                  key: MONGO_URI
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: campus-secrets
-                  key: JWT_SECRET
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 5015
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 5015
-            initialDelaySeconds: 20
-            periodSeconds: 20
+            failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: emergency-service
   namespace: smart-campus
+  labels:
+    app: emergency-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: emergency-service
@@ -298,46 +390,70 @@ spec:
     metadata:
       labels:
         app: emergency-service
+        app.kubernetes.io/part-of: smart-campus
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: emergency
           image: smart-campus/emergency:local
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5006
+            - name: http
+              containerPort: 5006
+          envFrom:
+            - configMapRef:
+                name: campus-service-config
           env:
             - name: PORT
               value: "5006"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
                   name: campus-secrets
                   key: MONGO_URI
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: campus-secrets
-                  key: JWT_SECRET
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          # /health checks MongoDB too: the pod only receives traffic once the DB is reachable.
           readinessProbe:
             httpGet:
               path: /health
-              port: 5006
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
+          # /livez only checks the process, so a DB outage does not cause restart loops.
           livenessProbe:
             httpGet:
-              path: /health
-              port: 5006
-            initialDelaySeconds: 20
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
             periodSeconds: 20
+            failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: student-service
   namespace: smart-campus
+  labels:
+    app: student-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: student-service
@@ -345,46 +461,70 @@ spec:
     metadata:
       labels:
         app: student-service
+        app.kubernetes.io/part-of: smart-campus
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: student
           image: smart-campus/student:local
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5007
+            - name: http
+              containerPort: 5007
+          envFrom:
+            - configMapRef:
+                name: campus-service-config
           env:
             - name: PORT
               value: "5007"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
                   name: campus-secrets
                   key: MONGO_URI
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: campus-secrets
-                  key: JWT_SECRET
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          # /health checks MongoDB too: the pod only receives traffic once the DB is reachable.
           readinessProbe:
             httpGet:
               path: /health
-              port: 5007
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
+          # /livez only checks the process, so a DB outage does not cause restart loops.
           livenessProbe:
             httpGet:
-              path: /health
-              port: 5007
-            initialDelaySeconds: 20
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
             periodSeconds: 20
+            failureThreshold: 3
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: teacher-service
   namespace: smart-campus
+  labels:
+    app: teacher-service
+    app.kubernetes.io/part-of: smart-campus
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: teacher-service
@@ -392,36 +532,55 @@ spec:
     metadata:
       labels:
         app: teacher-service
+        app.kubernetes.io/part-of: smart-campus
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
       containers:
         - name: teacher
           image: smart-campus/teacher:local
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 5008
+            - name: http
+              containerPort: 5008
+          envFrom:
+            - configMapRef:
+                name: campus-service-config
           env:
             - name: PORT
               value: "5008"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:
                   name: campus-secrets
                   key: MONGO_URI
-                  optional: false
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: campus-secrets
-                  key: JWT_SECRET
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          # /health checks MongoDB too: the pod only receives traffic once the DB is reachable.
           readinessProbe:
             httpGet:
               path: /health
-              port: 5008
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
+          # /livez only checks the process, so a DB outage does not cause restart loops.
           livenessProbe:
             httpGet:
-              path: /health
-              port: 5008
-            initialDelaySeconds: 20
+              path: /livez
+              port: http
+            initialDelaySeconds: 15
             periodSeconds: 20
+            failureThreshold: 3

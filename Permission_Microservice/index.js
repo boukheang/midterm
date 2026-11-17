@@ -1,80 +1,29 @@
 require('dotenv').config();
 
 const express = require('express');
+const mongoose = require('mongoose');
+
+const { connectDB } = require('../shared/db');
+const { registerHealthRoutes, requireRole, generateId, startServer } = require('../shared/service');
+const { evaluatePermissionWindow } = require('../shared/access-rules');
+const { AccessPermission: PermissionModel } = require('../shared/models')(mongoose);
+
 const app = express();
-
-app.use(express.json());
-
-require('./dbconnect.js');
-const PermissionModel = require('./permission_schema.js');
+app.use(express.json({ limit: '100kb' }));
 
 const PORT = process.env.PORT || 5004;
 
-// ----------------------------------------------------
-// HEALTH CHECK (Public for Docker)
-// ----------------------------------------------------
-
-app.get('/health', (req, res) => {
-    const mongoose = require('mongoose');
-    const connected = mongoose.connection.readyState === 1;
-
-    return res.status(connected ? 200 : 503).json({
-        success: connected,
-        service: 'Access Permission Microservice',
-        status: connected ? 'UP' : 'DATABASE_DISCONNECTED',
-        port: PORT,
-        timestamp: new Date().toISOString()
-    });
-});
+connectDB(mongoose, 'Permission Service');
+registerHealthRoutes(app, mongoose, { service: 'Access Permission Microservice', port: PORT });
 
 // ----------------------------------------------------
-// ADMIN-ONLY AUTHORIZATION
-// The API Gateway must verify the JWT and forward
-// X-User-Role after successful authentication.
+// ADMIN-ONLY AUTHORIZATION for every permission API.
+// The API Gateway verifies the JWT and forwards X-User-* headers.
 // ----------------------------------------------------
-
-function requireAdmin(req, res, next) {
-    const role = String(req.headers['x-user-role'] || '')
-        .trim()
-        .toLowerCase();
-
-    const email = String(req.headers['x-user-email'] || '')
-        .trim()
-        .toLowerCase();
-
-    if (!email || !role) {
-        return res.status(401).json({
-            success: false,
-            error: 'Unauthorized',
-            message: 'Authenticated identity from API Gateway is required.'
-        });
-    }
-
-    if (role !== 'admin') {
-        return res.status(403).json({
-            success: false,
-            error: 'Forbidden',
-            message: 'Only administrators can access permission APIs.'
-        });
-    }
-
-    req.admin = {
-        id: String(req.headers['x-user-id'] || ''),
-        email
-    };
-
+app.use('/api/permissions', requireRole('admin'), (req, res, next) => {
+    req.admin = req.identity;
     next();
-}
-
-// Apply admin-only authorization to every permission API.
-// Keep /health outside this middleware.
-app.use('/api/permissions', requireAdmin);
-
-// Generate permission ID
-function generateId(prefix = 'PERM') {
-    const rand = Math.floor(100 + Math.random() * 900);
-    return `${prefix}-${Date.now().toString().slice(-4)}${rand}`;
-}
+});
 
 // ----------------------------------------------------
 // GRANT OR UPDATE ROOM ACCESS PERMISSION
@@ -346,7 +295,7 @@ app.get('/api/permissions/room/:roomId', async (req, res) => {
 // ----------------------------------------------------
 // EVALUATE ROOM ACCESS
 // POST /api/permissions/check
-// ADMIN ONLY
+// ADMIN ONLY (simulate a door decision for any user/time)
 // ----------------------------------------------------
 
 app.post('/api/permissions/check', async (req, res) => {
@@ -404,70 +353,9 @@ app.post('/api/permissions/check', async (req, res) => {
 
         const permission = await PermissionModel.findOne(query);
 
-        if (!permission) {
-            return res.status(200).json({
-                allowed: false,
-                reason: 'NO_PERMISSION',
-                message: 'No active permission exists for this user and room.'
-            });
-        }
-
-        if (
-            permission.validFrom && now < new Date(permission.validFrom)
-        ) {
-            return res.status(200).json({
-                allowed: false,
-                reason: 'NOT_YET_VALID',
-                message: 'This permission is not yet valid.'
-            });
-        }
-
-        if (
-            permission.validUntil && now > new Date(permission.validUntil)
-        ) {
-            return res.status(200).json({
-                allowed: false,
-                reason: 'PERMISSION_EXPIRED',
-                message: 'This permission has expired.'
-            });
-        }
-
-        const days = [
-            'Sunday', 'Monday', 'Tuesday', 'Wednesday',
-            'Thursday', 'Friday', 'Saturday'
-        ];
-
-        const currentDay = days[now.getDay()];
-
-        if (
-            Array.isArray(permission.allowedDays) &&
-            permission.allowedDays.length > 0 &&
-            !permission.allowedDays.some(
-                day => day.toLowerCase() === currentDay.toLowerCase()
-            )
-        ) {
-            return res.status(200).json({
-                allowed: false,
-                reason: 'OUTSIDE_ALLOWED_DAYS',
-                message: `Access is not permitted on ${currentDay}.`
-            });
-        }
-
-        const currentTime =
-            `${String(now.getHours()).padStart(2, '0')}:` +
-            `${String(now.getMinutes()).padStart(2, '0')}`;
-
-        if (
-            currentTime < permission.startTime ||
-            currentTime > permission.endTime
-        ) {
-            return res.status(200).json({
-                allowed: false,
-                reason: 'OUTSIDE_SCHEDULED_HOURS',
-                message:
-                    `Access is allowed from ${permission.startTime} ` +
-                    `to ${permission.endTime}.`
-            });
+        const decision = evaluatePermissionWindow(permission, now);
+        if (!decision.allowed) {
+            return res.status(200).json(decision);
         }
 
         return res.status(200).json({
@@ -530,11 +418,6 @@ app.delete('/api/permissions/:id', async (req, res) => {
 // START SERVER
 // ----------------------------------------------------
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(
-        `[Permission Service] Running on port ${PORT}. ` +
-        'Permission APIs require admin authorization.'
-    );
-});
+startServer(app, PORT, 'Permission Service');
 
 module.exports = app;

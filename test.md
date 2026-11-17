@@ -2,8 +2,12 @@
 
 > **Base URL**:
 >
-> - Local Testing: `http://localhost:4000`
-> - EC2 Deployment: `http://<EC2_PUBLIC_IP>:4000`
+> - Kubernetes on Docker Desktop: `http://localhost:4000`
+> - Any cluster: `kubectl -n smart-campus port-forward svc/api-gateway 4000:4000`
+>
+> The admin account (`admin@campus.edu`) is created automatically from the
+> Kubernetes Secret by `scripts/deploy.ps1`. **Public registration cannot create
+> admins**; it only accepts `student` and `faculty`.
 
 ---
 
@@ -18,14 +22,16 @@
 - **Body (raw JSON)**:
   ```json
   {
-    "name": "Admin Director",
-    "email": "admin@campus.edu",
+    "name": "Faculty Tester",
+    "email": "faculty1@campus.edu",
     "password": "Password123!",
-    "role": "admin",
-    "department": "Campus Security"
+    "role": "faculty",
+    "department": "Engineering"
   }
   ```
 - **Expected Status**: `201 Created`
+- **Negative check**: the same request with `"role": "admin"` returns `403 Forbidden`
+  (`Only an administrator can create admin accounts.`).
 - **Expected Response**:
   ```json
   {
@@ -33,10 +39,10 @@
     "message": "User registered successfully",
     "user": {
       "id": "USR-xxxx",
-      "name": "Admin Director",
-      "email": "admin@campus.edu",
-      "role": "admin",
-      "department": "Campus Security"
+      "name": "Faculty Tester",
+      "email": "faculty1@campus.edu",
+      "role": "faculty",
+      "department": "Engineering"
     }
   }
   ```
@@ -486,7 +492,8 @@
 - **Expected Status**: `200 OK`
 - **Response Headers to inspect**:
   - `X-Load-Balanced-By`: `API-Gateway-RoundRobin`
-  - `X-Served-By-Instance`: `AccessLog-Instance-1` or `AccessLog-Instance-2` *(Alternates on each request)*
+  - `X-Served-By-Instance`: the Access Log **pod name**, e.g. `access-log-service-7d9c…-x2k4p` *(alternates between pods on each request)*
+- **Note**: students and faculty always swipe as themselves. `userEmail`/`userRole` in the body are only honoured for admins (badge simulator).
 
 ---
 
@@ -495,7 +502,6 @@
 In addition to manual Postman requests, the API Gateway serves an interactive live demonstration console.
 
 - **Console URL**: `http://localhost:4000/` (or `http://localhost:4000/dashboard`)
-- **EC2 Deployment URL**: `http://<EC2_PUBLIC_IP>:4000/`
 
 ### 6.1 Testing the Round-Robin Load Balancer Visually
 
@@ -504,12 +510,12 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
    - Select a room from the **Target Room** dropdown (e.g. `ENG-301`).
    - Click **"Swipe Badge (Single)"** or **"Simulate 4x Swipes"**.
 3. **What to Observe**:
-   - The active instance card (`AccessLog-Instance-1` vs `AccessLog-Instance-2`) highlights with a blue border during each request.
-   - The request counters increment, maintaining an even 50% / 50% load distribution.
+   - One card per Access Log pod appears; the pod that served the request highlights with a blue border.
+   - The request counters increment evenly across pods (scale with `kubectl -n smart-campus scale deploy access-log-service --replicas=3` and a third card appears).
    - The **Physical Solenoid / Lock Status** box flashes `ACCESS GRANTED` in green when the room is unlocked.
    - The embedded terminal prints the required response headers:
      - `X-Load-Balanced-By: API-Gateway-RoundRobin`
-     - `X-Served-By-Instance: AccessLog-Instance-1` / `AccessLog-Instance-2`
+     - `X-Served-By-Instance: <access-log pod name>`
      - Status code and response latency.
 
 ### 6.2 Testing Room Management & Lock Control

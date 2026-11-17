@@ -1,15 +1,22 @@
+# Build from the REPOSITORY ROOT so the shared/ library can be copied in:
+#   docker build -f Student_Microservice/Dockerfile -t <image> .
 FROM node:20-alpine
 
-WORKDIR /usr/src/app
+ENV NODE_ENV=production
+WORKDIR /usr/src/app/service
 
-COPY package*.json ./
-RUN npm install --production
+# Install dependencies first so this layer is cached between code changes.
+COPY Student_Microservice/package*.json ./
+RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
 
-COPY . .
+COPY shared /usr/src/app/shared
+COPY Student_Microservice/ ./
+
+# Run as the unprivileged 'node' user instead of root.
+USER node
 
 EXPOSE 5007
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:5007/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:5007/livez || exit 1
 
 CMD ["node", "index.js"]
