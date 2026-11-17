@@ -19,6 +19,7 @@ spec:
       labels:
         app: registration-service
         app.kubernetes.io/part-of: smart-campus
+        campus-tier: backend   # used by k8s/30-network-policy.yaml
     spec:
       securityContext:
         runAsNonRoot: true
@@ -102,6 +103,7 @@ spec:
       labels:
         app: authentication-service
         app.kubernetes.io/part-of: smart-campus
+        campus-tier: backend   # used by k8s/30-network-policy.yaml
     spec:
       securityContext:
         runAsNonRoot: true
@@ -178,6 +180,7 @@ spec:
       labels:
         app: room-service
         app.kubernetes.io/part-of: smart-campus
+        campus-tier: backend   # used by k8s/30-network-policy.yaml
     spec:
       securityContext:
         runAsNonRoot: true
@@ -249,6 +252,7 @@ spec:
       labels:
         app: permission-service
         app.kubernetes.io/part-of: smart-campus
+        campus-tier: backend   # used by k8s/30-network-policy.yaml
     spec:
       securityContext:
         runAsNonRoot: true
@@ -320,6 +324,7 @@ spec:
       labels:
         app: access-log-service
         app.kubernetes.io/part-of: smart-campus
+        campus-tier: backend   # used by k8s/30-network-policy.yaml
     spec:
       securityContext:
         runAsNonRoot: true
@@ -391,6 +396,7 @@ spec:
       labels:
         app: emergency-service
         app.kubernetes.io/part-of: smart-campus
+        campus-tier: backend   # used by k8s/30-network-policy.yaml
     spec:
       securityContext:
         runAsNonRoot: true
@@ -462,6 +468,7 @@ spec:
       labels:
         app: student-service
         app.kubernetes.io/part-of: smart-campus
+        campus-tier: backend   # used by k8s/30-network-policy.yaml
     spec:
       securityContext:
         runAsNonRoot: true
@@ -533,6 +540,7 @@ spec:
       labels:
         app: teacher-service
         app.kubernetes.io/part-of: smart-campus
+        campus-tier: backend   # used by k8s/30-network-policy.yaml
     spec:
       securityContext:
         runAsNonRoot: true

@@ -37,6 +37,7 @@ Kubernetes manifests are in [`k8s/`](k8s/):
 | `20-deployments.yaml` | The 8 backend Deployments (probes, resource limits, non-root) |
 | `21-gateway.yaml` | API Gateway Deployment, sidecar, `LoadBalancer` Service |
 | `25-autoscaling.yaml` | HorizontalPodAutoscaler + PodDisruptionBudget for Access Log |
+| `30-network-policy.yaml` | NetworkPolicies: only the gateway can reach the services, only services can reach MongoDB |
 | `optional/ingress.yaml` | Ingress for `smartcampus.local` (only if an ingress controller is installed) |
 | `dashboard/dashboard-admin.yaml` | Login account for the Kubernetes Dashboard |
 
@@ -147,6 +148,8 @@ use, so run `scripts\dashboard.ps1` once **before** the presentation while onlin
 - The gateway **removes any `X-User-*` headers sent by clients** and sets them only
   from a verified JWT, so callers can't impersonate an admin with a header.
 - Every service re-checks the role itself (defence in depth).
+- NetworkPolicies block pod-to-pod traffic except gateway → services → MongoDB, so even a
+  pod inside the cluster can't call a service directly with forged headers.
 - Public registration can create only `student`/`faculty`. Admin accounts are created
   by an existing admin or bootstrapped from the Secret.
 - Students/faculty always swipe as themselves; only admins can simulate another user's swipe.

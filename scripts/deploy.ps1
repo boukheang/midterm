@@ -76,7 +76,7 @@ else {
 }
 
 Write-Host '==> Storage, database, services' -ForegroundColor Cyan
-foreach ($file in '03-storage.yaml', '04-mongodb.yaml', '10-services.yaml', '20-deployments.yaml', '21-gateway.yaml', '25-autoscaling.yaml') {
+foreach ($file in '03-storage.yaml', '04-mongodb.yaml', '10-services.yaml', '20-deployments.yaml', '21-gateway.yaml', '25-autoscaling.yaml', '30-network-policy.yaml') {
     # Point our images at this build's tag; everything else is applied unchanged.
     $yaml = (Get-Content "k8s/$file" -Raw) -replace 'image: smart-campus/([a-z-]+):local', "image: smart-campus/`$1:$imageTag"
     Invoke-Native "apply $file" { $yaml | kubectl.exe apply -f - }

@@ -84,34 +84,43 @@ app.post('/api/alerts/lockdown', adminOnly, async (req, res) => {
 // ----------------------------------------------------
 app.post('/api/alerts/lift', adminOnly, async (req, res) => {
     try {
-        const {
-            alertId,
-            building = 'ALL',
-            resolutionNotes = 'All clear confirmed by campus safety.'
-        } = req.body;
-
+        const { alertId, resolutionNotes = 'All clear confirmed by campus safety.' } = req.body || {};
+        let building = String((req.body && req.body.building) || 'ALL').trim() || 'ALL';
         const resolvedBy = req.identity.email;
+        const LOCKDOWN_TYPES = ['CAMPUS_LOCKDOWN', 'BUILDING_LOCKDOWN'];
 
-        // Find and resolve the alert
-        const query = { status: 'ACTIVE' };
+        // Lifting by alertId: use that alert's own building, so only its rooms unlock.
         if (alertId) {
-            query._id = alertId;
-        } else if (building) {
-            query.building = building;
+            const target = await AlertModel.findOne({ _id: alertId, status: 'ACTIVE', alertType: { $in: LOCKDOWN_TYPES } }).lean();
+            if (!target) {
+                return res.status(404).json({ success: false, message: 'No active lockdown alert with that id.' });
+            }
+            building = target.building || 'ALL';
         }
 
-        const activeAlert = await AlertModel.findOneAndUpdate(
-            query,
-            {
-                $set: {
-                    status: 'RESOLVED',
-                    resolvedAt: new Date(),
-                    resolvedBy: resolvedBy,
-                    resolutionNotes: resolutionNotes
-                }
-            },
-            { new: true }
-        );
+        // A single building can't be reopened while the whole campus is locked down.
+        if (building !== 'ALL' && await AlertModel.exists({ status: 'ACTIVE', alertType: 'CAMPUS_LOCKDOWN' })) {
+            return res.status(409).json({
+                success: false,
+                message: 'A campus-wide lockdown is active. Lift it for ALL buildings first.'
+            });
+        }
+
+        // Resolve every active lockdown alert this lift covers (previously only one was
+        // resolved, leaving others ACTIVE although their rooms were unlocked).
+        // Incident reports are not lockdowns and stay open.
+        const alertFilter = { status: 'ACTIVE', alertType: { $in: LOCKDOWN_TYPES } };
+        if (building !== 'ALL') alertFilter.building = exactInsensitive(building);
+
+        const toResolve = await AlertModel.find(alertFilter).select('_id').lean();
+        const resolvedIds = toResolve.map(a => a._id);
+        if (resolvedIds.length > 0) {
+            await AlertModel.updateMany(
+                { _id: { $in: resolvedIds } },
+                { $set: { status: 'RESOLVED', resolvedAt: new Date(), resolvedBy, resolutionNotes } }
+            );
+        }
+        const resolvedAlerts = await AlertModel.find({ _id: { $in: resolvedIds } }).lean();
 
         // Reset rooms emergency lock in rooms collection
         let unlockedRooms = 0;
@@ -129,7 +138,9 @@ app.post('/api/alerts/lift', adminOnly, async (req, res) => {
         return res.status(200).json({
             success: true,
             message: `Emergency lockdown lifted for: ${building}. Standard card access permissions restored.`,
-            resolvedAlert: activeAlert,
+            resolvedCount: resolvedAlerts.length,
+            resolvedAlerts,
+            resolvedAlert: resolvedAlerts[0] || null, // kept for older clients
             unlockedRoomsCount: unlockedRooms
         });
     } catch (err) {

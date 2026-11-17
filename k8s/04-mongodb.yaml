@@ -36,6 +36,7 @@ spec:
       labels:
         app: mongodb
         app.kubernetes.io/part-of: smart-campus
+        campus-tier: database   # used by k8s/30-network-policy.yaml
     spec:
       containers:
         - name: mongodb

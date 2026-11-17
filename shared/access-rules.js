@@ -25,20 +25,35 @@ function evaluatePermissionWindow(permission, now = new Date()) {
         return { allowed: false, reason: 'PERMISSION_EXPIRED', message: 'This permission has expired.' };
     }
 
-    const currentDay = DAYS[now.getDay()];
+    const currentTime = hhmm(now);
+    const { startTime, endTime } = permission;
+    // Overnight window (e.g. 22:00-02:00): start is later than end.
+    const overnight = Boolean(startTime && endTime && startTime > endTime);
+
+    // The weekday that "owns" this moment. In an overnight window the early-morning
+    // part belongs to the previous day: Friday 22:00-02:00 covers Saturday 01:30.
+    let shiftDay = now.getDay();
+    if (overnight && currentTime <= endTime) {
+        shiftDay = (shiftDay + 6) % 7;
+    }
+    const currentDay = DAYS[shiftDay];
+
     if (Array.isArray(permission.allowedDays) && permission.allowedDays.length > 0 &&
         !permission.allowedDays.some(day => String(day).toLowerCase() === currentDay.toLowerCase())) {
         return { allowed: false, reason: `OUTSIDE_ALLOWED_DAYS_${currentDay.toUpperCase()}`, message: `Access is not permitted on ${currentDay}.` };
     }
 
-    const currentTime = hhmm(now);
-    if (permission.startTime && permission.endTime &&
-        (currentTime < permission.startTime || currentTime > permission.endTime)) {
-        return {
-            allowed: false,
-            reason: `OUTSIDE_SCHEDULED_HOURS_${currentTime}`,
-            message: `Access is allowed from ${permission.startTime} to ${permission.endTime}.`
-        };
+    if (startTime && endTime) {
+        const inWindow = overnight
+            ? currentTime >= startTime || currentTime <= endTime
+            : currentTime >= startTime && currentTime <= endTime;
+        if (!inWindow) {
+            return {
+                allowed: false,
+                reason: `OUTSIDE_SCHEDULED_HOURS_${currentTime}`,
+                message: `Access is allowed from ${startTime} to ${endTime}${overnight ? ' (overnight)' : ''}.`
+            };
+        }
     }
 
     return { allowed: true, reason: 'AUTHORIZED', message: 'User is authorized for room access.' };

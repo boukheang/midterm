@@ -94,11 +94,12 @@ app.post('/api/permissions/grant', async (req, res) => {
         if (
             !timePattern.test(startTime) ||
             !timePattern.test(endTime) ||
-            startTime >= endTime
+            startTime === endTime
         ) {
+            // startTime > endTime is allowed and means an overnight window (e.g. 22:00-02:00).
             return res.status(400).json({
                 success: false,
-                message: 'Invalid time range. Use HH:mm and startTime < endTime.'
+                message: 'Invalid time range. Use HH:mm; startTime and endTime must differ (start later than end = overnight).'
             });
         }
 

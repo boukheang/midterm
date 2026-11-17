@@ -41,6 +41,7 @@ spec:
       labels:
         app: api-gateway
         app.kubernetes.io/part-of: smart-campus
+        campus-tier: gateway   # used by k8s/30-network-policy.yaml
     spec:
       securityContext:
         runAsNonRoot: true

@@ -333,7 +333,51 @@ async function runAllTests() {
             teacherInfo.status === 200 && teacherInfo.body.user && teacherInfo.body.user.email === testFacultyEmail,
             `Status: ${teacherInfo.status}`);
 
+        // 8. Overnight permission windows
+        console.log('\n' + '='.repeat(70));
+        console.log('8. TEST OVERNIGHT PERMISSION WINDOW (22:00-02:00, Friday)');
+        console.log('='.repeat(70));
+
+        const grant = await makeRequest('POST', '/api/permissions/grant', {
+            userId: 'USR-NIGHT', userEmail: studentEmail, userRole: 'student',
+            roomId: `ROOM-${testRoomNum}`, roomNumber: testRoomNum,
+            allowedDays: ['Friday'], startTime: '22:00', endTime: '02:00'
+        }, adminAuth);
+        assert('8.1 Overnight grant accepted', grant.status === 201 || grant.status === 200, `Status: ${grant.status} ${grant.body.message || ''}`);
+
+        const check = ts => makeRequest('POST', '/api/permissions/check',
+            { userEmail: studentEmail, userRole: 'student', roomNumber: testRoomNum, timestamp: ts }, adminAuth);
+        const friLate = await check('2026-11-20T23:00:00');
+        assert('8.2 Friday 23:00 allowed', friLate.body.allowed === true, `Reason: ${friLate.body.reason}`);
+        const satEarly = await check('2026-11-21T01:30:00');
+        assert('8.3 Saturday 01:30 allowed (still Friday night)', satEarly.body.allowed === true, `Reason: ${satEarly.body.reason}`);
+        const satLate = await check('2026-11-21T03:00:00');
+        assert('8.4 Saturday 03:00 denied', satLate.body.allowed === false, `Reason: ${satLate.body.reason}`);
+        if (grant.body.permission) {
+            await makeRequest('DELETE', `/api/permissions/${grant.body.permission._id}`, null, adminAuth);
+        }
+
         await makeRequest('DELETE', `/api/rooms/${testRoomNum}`, null, adminAuth);
+
+        // 9. Lifting a lockdown resolves every lockdown alert it covers
+        console.log('\n' + '='.repeat(70));
+        console.log('9. TEST LOCKDOWN LIFT');
+        console.log('='.repeat(70));
+
+        await makeRequest('POST', '/api/alerts/lockdown', { building: 'Test Hall A', description: 'Test lockdown A' }, adminAuth);
+        await makeRequest('POST', '/api/alerts/lockdown', { building: 'Test Hall B', description: 'Test lockdown B' }, adminAuth);
+        await makeRequest('POST', '/api/alerts/lockdown', { building: 'ALL', description: 'Test campus lockdown' }, adminAuth);
+
+        const partialLift = await makeRequest('POST', '/api/alerts/lift', { building: 'Test Hall A' }, adminAuth);
+        assert('9.1 One building cannot reopen during a campus lockdown (409)', partialLift.status === 409, `Status: ${partialLift.status}`);
+
+        const fullLift = await makeRequest('POST', '/api/alerts/lift', { building: 'ALL' }, adminAuth);
+        assert('9.2 Lift ALL resolves all 3 lockdown alerts', fullLift.status === 200 && fullLift.body.resolvedCount >= 3,
+            `Resolved: ${fullLift.body.resolvedCount}`);
+
+        const stillActive = await makeRequest('GET', '/api/alerts/active', null, adminAuth);
+        const activeLockdowns = (stillActive.body.alerts || []).filter(a => ['CAMPUS_LOCKDOWN', 'BUILDING_LOCKDOWN'].includes(a.alertType));
+        assert('9.3 No lockdown alerts left active', activeLockdowns.length === 0, `Active lockdowns: ${activeLockdowns.length}`);
 
         console.log('\n' + '='.repeat(70));
         console.log(`VERIFICATION COMPLETE: ${passedCount} PASSED, ${failedCount} FAILED`);
