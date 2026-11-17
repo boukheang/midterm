@@ -86,10 +86,19 @@ if ($InstallMetricsServer) {
     Write-Host '==> Installing metrics-server' -ForegroundColor Cyan
     Invoke-Native 'metrics-server' { kubectl.exe apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.2/components.yaml }
     # Local clusters use self-signed kubelet certificates.
-    $patch = '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+    # The patch goes through a file: Windows PowerShell 5.1 strips the double quotes
+    # from JSON passed as a command-line argument, which kubectl then rejects.
     $args0 = kubectl.exe -n kube-system get deploy metrics-server -o jsonpath='{.spec.template.spec.containers[0].args}'
     if ($args0 -notmatch 'kubelet-insecure-tls') {
-        Invoke-Native 'patch metrics-server' { kubectl.exe -n kube-system patch deployment metrics-server --type=json -p $patch }
+        $patchFile = Join-Path ([System.IO.Path]::GetTempPath()) 'metrics-server-patch.json'
+        Set-Content -Path $patchFile -Encoding ASCII -Value '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+        try {
+            Invoke-Native 'patch metrics-server' { kubectl.exe -n kube-system patch deployment metrics-server --type=json --patch-file $patchFile }
+        }
+        finally { Remove-Item $patchFile -Force -ErrorAction SilentlyContinue }
+    }
+    else {
+        Write-Host 'metrics-server already configured for local clusters.' -ForegroundColor DarkGray
     }
 }
 
