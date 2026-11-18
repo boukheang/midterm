@@ -83,14 +83,16 @@ powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -UseDockerHub -Insta
 powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -InstallMetricsServer
 ```
 
-**8. Open the app.** This terminal stays busy, so **don't close it**. The browser opens
-http://localhost:4000; log in with the **Admin** demo button.
+**8. Open the app** at **http://localhost** (it goes through the Kubernetes Ingress).
+If step 7 printed *"Open the app : http://localhost"*, just open that in the browser and skip
+this command. If it said the cluster doesn't publish the Ingress, run this and **don't close
+it**. Log in with the **Admin** demo button.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\open-app.ps1
 ```
 
-> Port 4000 busy? Use this instead and open http://localhost:8080:
+> Port 80 busy? Use this instead and open http://localhost:8080:
 > ```powershell
 > powershell -ExecutionPolicy Bypass -File scripts\open-app.ps1 -Port 8080
 > ```
@@ -140,7 +142,17 @@ powershell -ExecutionPolicy Bypass -File scripts\dashboard.ps1
 **Show everything that is running**
 
 ```powershell
-kubectl -n smart-campus get pods,svc,hpa,pvc
+kubectl -n smart-campus get pods,svc,hpa,pvc,ingress
+```
+
+**Show the Ingress and its controller**
+
+```powershell
+kubectl -n smart-campus describe ingress campus-gateway
+```
+
+```powershell
+kubectl -n ingress-nginx get pods,svc
 ```
 
 **Scale the door-swipe service to 3 pods** (a third card appears in the app)

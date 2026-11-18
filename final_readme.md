@@ -8,7 +8,8 @@ role-based access control and load-balances door swipes across the Access Log po
 
 | Component | Kubernetes object | Port | Purpose |
 |---|---|---:|---|
-| API Gateway | Deployment + `LoadBalancer` Service | 4000 | Only entry point, JWT + RBAC, round-robin LB, dashboard UI |
+| Ingress (NGINX) | Ingress + NGINX Ingress Controller | 80 | Public entry point: `http://localhost` / `http://smartcampus.local` → API Gateway |
+| API Gateway | Deployment + `ClusterIP` Service | 4000 | Application entry point: JWT + RBAC, round-robin LB, dashboard UI |
 | Registration | Deployment + `ClusterIP` | 5001 | Sign-up, admin user management, bootstrap admin |
 | Authentication | Deployment + `ClusterIP` | 5002 | Login, JWT issuing |
 | Room | Deployment + `ClusterIP` | 5003 | Rooms, locks, classroom enrollment |
@@ -35,10 +36,10 @@ Kubernetes manifests are in [`k8s/`](k8s/):
 | `04-mongodb.yaml` | MongoDB StatefulSet with persistent storage |
 | `10-services.yaml` | Internal Services + headless Service for the Access Log pods |
 | `20-deployments.yaml` | The 8 backend Deployments (probes, resource limits, non-root) |
-| `21-gateway.yaml` | API Gateway Deployment, sidecar, `LoadBalancer` Service |
+| `21-gateway.yaml` | API Gateway Deployment, sidecar, internal `ClusterIP` Service |
 | `25-autoscaling.yaml` | HorizontalPodAutoscaler + PodDisruptionBudget for Access Log |
 | `30-network-policy.yaml` | NetworkPolicies: only the gateway can reach the services, only services can reach MongoDB |
-| `optional/ingress.yaml` | Ingress for `smartcampus.local` (only if an ingress controller is installed) |
+| `40-ingress.yaml` | Ingress: routes `localhost` and `smartcampus.local` to the gateway (controller installed by `deploy.ps1`) |
 | `dashboard/dashboard-admin.yaml` | Login account for the Kubernetes Dashboard |
 
 ## Deploy on the demo laptop (Windows + Docker Desktop)
@@ -66,18 +67,21 @@ Kubernetes manifests are in [`k8s/`](k8s/):
    - creates the `campus-secrets` Secret with a random JWT key and the admin account;
    - applies all manifests and waits until every pod is ready.
 
-4. Open **http://localhost:4000**. The script tells you which way works on that laptop:
-   - Docker Desktop in *kubeadm* mode publishes the gateway on localhost:4000 directly.
-   - Docker Desktop in *kind* mode (node name `desktop-control-plane`) and minikube don't.
-     Run this and keep the window open:
+4. Open **http://localhost**. Traffic goes browser → Ingress → API Gateway. The script
+   installs the NGINX Ingress Controller and tells you which way works on that laptop:
+   - Docker Desktop normally publishes the Ingress on `http://localhost` directly.
+   - If it says it doesn't (some kind-mode setups, minikube), run this and keep the window open:
      ```powershell
      powershell -ExecutionPolicy Bypass -File scripts\open-app.ps1
      ```
 
    Log in with the **Admin** quick button (`admin@campus.edu` / `Password123!`, set by `-AdminPassword`).
 
-> If port 4000 is already in use (e.g. an old `docker compose` stack of the midterm),
-> stop it with `docker compose down`, or run `scripts\open-app.ps1 -Port 8080` and open http://localhost:8080.
+> Optional nicer name: add `127.0.0.1 smartcampus.local` to `C:\Windows\System32\drivers\etc\hosts`
+> (open Notepad as Administrator), then use **http://smartcampus.local**.
+>
+> If port 80 is busy, run `scripts\open-app.ps1 -Port 8080` and open http://localhost:8080.
+> Stop any old midterm `docker compose` stack first (`docker compose down`).
 
 ### Using the published Docker Hub images
 
@@ -104,7 +108,7 @@ running the old image. If you used `scripts\open-app.ps1`, restart it after a re
 minikube start
 kubectl config use-context minikube
 powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -InstallMetricsServer
-kubectl -n smart-campus port-forward svc/api-gateway 4000:4000
+powershell -ExecutionPolicy Bypass -File scripts\open-app.ps1
 ```
 
 ## Kubernetes Dashboard (web UI)
@@ -121,7 +125,7 @@ namespace. Keep that PowerShell window open during the demo.
 What to show in the Dashboard:
 - **Workloads → Deployments**: all services green; scale `access-log-service` live.
 - **Pods**: click a pod → logs (e.g. MongoDB connection, swipe decisions).
-- **Services**: only `api-gateway` is `LoadBalancer`, everything else is internal.
+- **Services**: every app Service is internal (`ClusterIP`); the only way in is the **Ingress** (Service → Ingresses).
 - **Config and Storage**: ConfigMap, Secret (values hidden), PVCs.
 - With `-InstallMetricsServer`, CPU/memory graphs and the HPA status appear.
 
@@ -132,7 +136,7 @@ use, so run `scripts\dashboard.ps1` once **before** the presentation while onlin
 
 1. **Cluster overview**
    ```powershell
-   kubectl -n smart-campus get pods,svc,hpa,pvc
+   kubectl -n smart-campus get pods,svc,hpa,pvc,ingress
    ```
    Only `api-gateway` is exposed; all other Services are `ClusterIP`.
 2. **Login & RBAC**: log in as admin, faculty, student (quick buttons). Each role sees

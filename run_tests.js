@@ -5,7 +5,7 @@
  */
 const http = require('http');
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost';  // through the Ingress
 // Bootstrap admin (seeded by the Registration service from the Kubernetes Secret).
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@campus.edu';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Password123!';

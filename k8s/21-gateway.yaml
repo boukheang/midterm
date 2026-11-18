@@ -1,6 +1,6 @@
-# API Gateway: the only entry point into the cluster.
-# Service type LoadBalancer -> on Docker Desktop it is published on http://localhost:4000
-# with no extra setup. (On minikube run `minikube tunnel` or use port-forward.)
+# API Gateway: application entry point (JWT, roles, routing, load balancing).
+# Its Service is internal (ClusterIP). Outside traffic arrives through the
+# Ingress (k8s/40-ingress.yaml), so the Ingress is the cluster's only public door.
 apiVersion: v1
 kind: Service
 metadata:
@@ -10,7 +10,7 @@ metadata:
     app: api-gateway
     app.kubernetes.io/part-of: smart-campus
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: api-gateway
   ports:

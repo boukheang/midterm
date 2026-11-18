@@ -2,8 +2,8 @@
 
 > **Base URL**:
 >
-> - Kubernetes on Docker Desktop: `http://localhost:4000`
-> - Any cluster: `kubectl -n smart-campus port-forward svc/api-gateway 4000:4000`
+> - Through the Kubernetes Ingress: `http://localhost` (or `http://smartcampus.local`)
+> - If the Ingress isn't published on localhost: run `scripts\open-app.ps1` first
 >
 > The admin account (`admin@campus.edu`) is created automatically from the
 > Kubernetes Secret by `scripts/deploy.ps1`. **Public registration cannot create
@@ -14,7 +14,7 @@
 ## 1. Test Registration
 
 - **Method**: `POST`
-- **URL**: `http://localhost:4000/reg`
+- **URL**: `http://localhost/reg`
 - **Headers**:
   ```http
   Content-Type: application/json
@@ -52,7 +52,7 @@
 ## 2. Test Login & Get JWT Token
 
 - **Method**: `POST`
-- **URL**: `http://localhost:4000/login`
+- **URL**: `http://localhost/login`
 - **Headers**:
   ```http
   Content-Type: application/json
@@ -88,7 +88,7 @@
 ## 3. Test Room Management (With Token)
 
 - **Method**: `POST`
-- **URL**: `http://localhost:4000/api/rooms`
+- **URL**: `http://localhost/api/rooms`
 - **Headers**:
   ```http
   Content-Type: application/json
@@ -127,7 +127,7 @@
 # Permission Microservice(Admin only)
 ## 1. grant permission to student/faculty
   **Method**: `POST`
-- **URL**: `http://localhost:4000/api/permissions/grant`
+- **URL**: `http://localhost/api/permissions/grant`
 - **Headers**:
 
   ```http
@@ -175,7 +175,7 @@
 ## 1. Get Student Information (With Token)
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/students/user_info`
+- **URL**: `http://localhost/api/students/user_info`
 - **Headers**:
 
   ```http
@@ -201,7 +201,7 @@
 ## 2. Update Student Information (With Token)
 
 - **Method**: `PUT`
-- **URL**: `http://localhost:4000/api/students/update_info`
+- **URL**: `http://localhost/api/students/update_info`
 - **Headers**:
 
   ```http
@@ -236,7 +236,7 @@
 ## 3. Get Student Room Schedule (With Token)
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/students/room_schedule`
+- **URL**: `http://localhost/api/students/room_schedule`
 - **Headers**:
 
   ```http
@@ -273,7 +273,7 @@
 ## 1. Get Teacher Information (With Token)
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/teachers/user_info`
+- **URL**: `http://localhost/api/teachers/user_info`
 - **Headers**:
 
   ```http
@@ -299,7 +299,7 @@
 ## 2. Update Teacher Information (With Token)
 
 - **Method**: `PUT`
-- **URL**: `http://localhost:4000/api/teachers/update_info`
+- **URL**: `http://localhost/api/teachers/update_info`
 - **Headers**:
 
   ```http
@@ -335,7 +335,7 @@
 ## 3. Get Teacher Room Schedule (With Token)
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/teachers/room_schedule`
+- **URL**: `http://localhost/api/teachers/room_schedule`
 - **Headers**:
 
   ```http
@@ -375,7 +375,7 @@
 ### 4.1 Wrong Password
 
 - **Method**: `POST`
-- **URL**: `http://localhost:4000/login`
+- **URL**: `http://localhost/login`
 - **Headers**: `Content-Type: application/json`
 - **Body (raw JSON)**:
   ```json
@@ -399,7 +399,7 @@
 ### 4.2 Missing Token
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/rooms`
+- **URL**: `http://localhost/api/rooms`
 - **Headers**: *(Do NOT provide Authorization header)*
 - **Expected Status**: `401 Unauthorized`
 - **Expected Response**:
@@ -416,7 +416,7 @@
 ### 4.3 Invalid / Tampered Token
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/rooms`
+- **URL**: `http://localhost/api/rooms`
 - **Headers**:
   ```http
   Authorization: Bearer fake123
@@ -436,11 +436,11 @@
 ### 4.4 Unauthorized Role (Role-Based Access Control)
 
 1. Register and login as a `student`:
-   - `POST http://localhost:4000/reg` with `"role": "student"`
-   - `POST http://localhost:4000/login` to get the student token.
+   - `POST http://localhost/reg` with `"role": "student"`
+   - `POST http://localhost/login` to get the student token.
 2. Attempt to create a room using the student token:
    - **Method**: `POST`
-   - **URL**: `http://localhost:4000/api/rooms`
+   - **URL**: `http://localhost/api/rooms`
    - **Headers**:
      ```http
      Content-Type: application/json
@@ -472,7 +472,7 @@
 ### 5.1 Door Badge Swipe Simulation
 
 - **Method**: `POST`
-- **URL**: `http://localhost:4000/api/logs/swipe`
+- **URL**: `http://localhost/api/logs/swipe`
 - **Headers**:
   ```http
   Content-Type: application/json
@@ -501,11 +501,11 @@
 
 In addition to manual Postman requests, the API Gateway serves an interactive live demonstration console.
 
-- **Console URL**: `http://localhost:4000/` (or `http://localhost:4000/dashboard`)
+- **Console URL**: `http://localhost/` (or `http://localhost/dashboard`)
 
 ### 6.1 Testing the Round-Robin Load Balancer Visually
 
-1. Open `http://localhost:4000/` in your browser.
+1. Open `http://localhost/` in your browser.
 2. Under **Door Badge Swipe & Round-Robin Load Balancer**:
    - Select a room from the **Target Room** dropdown (e.g. `ENG-301`).
    - Click **"Swipe badge"** or **"Swipe 4 times"**.

@@ -12,7 +12,7 @@ Quick start (Windows, Docker Desktop with Kubernetes enabled):
 powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -InstallMetricsServer
 ```
 
-Then open http://localhost:4000. For the Kubernetes Dashboard:
+Then open http://localhost (served through the Kubernetes Ingress). For the Kubernetes Dashboard:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\dashboard.ps1

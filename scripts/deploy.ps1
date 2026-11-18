@@ -14,8 +14,12 @@ param(
     [string]$AdminEmail = 'admin@campus.edu',
     [string]$AdminPassword = 'Password123!',   # demo default - matches the dashboard's quick-login button
     [string]$MongoUri = 'mongodb://mongodb:27017/smart_campus_access_db',
-    [switch]$ResetSecret             # recreate the Secret (logs everyone out: new JWT key)
+    [switch]$ResetSecret,            # recreate the Secret (logs everyone out: new JWT key)
+    [switch]$SkipIngressController   # don't install/upgrade the NGINX Ingress Controller (already present)
 )
+
+# Official NGINX Ingress Controller manifest, pinned to a release.
+$IngressNginxManifest = 'https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.12.1/deploy/static/provider/cloud/deploy.yaml'
 
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
@@ -83,8 +87,17 @@ else {
     Write-Host '==> Secret campus-secrets already exists (kept). Use -ResetSecret to recreate it.' -ForegroundColor DarkGray
 }
 
-Write-Host '==> Storage, database, services' -ForegroundColor Cyan
-foreach ($file in '03-storage.yaml', '04-mongodb.yaml', '10-services.yaml', '20-deployments.yaml', '21-gateway.yaml', '25-autoscaling.yaml', '30-network-policy.yaml') {
+# The Ingress needs an Ingress Controller (the NGINX proxy that actually serves it).
+# Its admission webhook must be ready before an Ingress can be applied.
+if (-not $SkipIngressController) {
+    Write-Host '==> Installing the NGINX Ingress Controller' -ForegroundColor Cyan
+    Invoke-Native 'ingress-nginx' { kubectl.exe apply -f $IngressNginxManifest }
+    Invoke-Native 'ingress-nginx rollout' { kubectl.exe -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=300s }
+    Invoke-Native 'ingress-nginx webhook' { kubectl.exe -n ingress-nginx wait --for=condition=complete job/ingress-nginx-admission-patch --timeout=180s }
+}
+
+Write-Host '==> Storage, database, services, ingress' -ForegroundColor Cyan
+foreach ($file in '03-storage.yaml', '04-mongodb.yaml', '10-services.yaml', '20-deployments.yaml', '21-gateway.yaml', '25-autoscaling.yaml', '30-network-policy.yaml', '40-ingress.yaml') {
     # Local mode: point our images (whatever registry the YAML names) at the locally
     # built tag. Docker Hub mode: apply the YAML exactly as committed.
     $yaml = Get-Content "k8s/$file" -Raw
@@ -121,23 +134,23 @@ foreach ($d in ($deployments -split ' ' | Where-Object { $_ })) {
     Invoke-Native "rollout $d" { kubectl.exe -n $ns rollout status "deployment/$d" --timeout=300s }
 }
 
-kubectl.exe -n $ns get pods,svc,hpa,pvc
+kubectl.exe -n $ns get pods,svc,hpa,pvc,ingress
 Write-Host ''
-Write-Host 'Smart Campus is running.' -ForegroundColor Green
+Write-Host 'Smart Campus is running behind the Ingress.' -ForegroundColor Green
 
-# Docker Desktop (kubeadm mode) publishes LoadBalancer Services on localhost.
-# Other clusters (kind mode, minikube) leave EXTERNAL-IP pending -> use a port-forward.
+# Docker Desktop (kubeadm mode) publishes the Ingress Controller's LoadBalancer on
+# localhost:80. Other clusters (kind mode, minikube) leave it pending -> use open-app.ps1.
 $lb = $null
 for ($i = 0; $i -lt 10 -and -not $lb; $i++) {
-    $lb = kubectl.exe -n $ns get svc api-gateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}'
+    $lb = kubectl.exe -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}{.status.loadBalancer.ingress[0].hostname}' 2>$null
     if (-not $lb) { Start-Sleep -Seconds 2 }
 }
 if ($lb) {
-    Write-Host '  Open the app   : http://localhost:4000'
+    Write-Host '  Open the app   : http://localhost   (or http://smartcampus.local after adding it to the hosts file)'
 }
 else {
-    Write-Host '  This cluster does not publish LoadBalancer Services on localhost.' -ForegroundColor Yellow
-    Write-Host '  Open the app   : powershell -ExecutionPolicy Bypass -File scripts\open-app.ps1   (keeps a tunnel open on http://localhost:4000)'
+    Write-Host '  This cluster does not publish the Ingress on localhost by itself.' -ForegroundColor Yellow
+    Write-Host '  Open the app   : powershell -ExecutionPolicy Bypass -File scripts\open-app.ps1   (keeps a tunnel to the Ingress open on http://localhost)'
 }
 Write-Host "  Admin login    : $AdminEmail (password from -AdminPassword)"
 Write-Host '  Kubernetes Dashboard: powershell -ExecutionPolicy Bypass -File scripts\dashboard.ps1'
