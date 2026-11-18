@@ -22,7 +22,8 @@ powershell -ExecutionPolicy Bypass -File scripts\dashboard.ps1
 
 | Service | Port | Responsibility |
 |---|:---:|---|
-| API Gateway | 4000 | Entry point, JWT + RBAC, round-robin load balancer, web console |
+| Ingress (NGINX) | 80 | Public entry point: `http://localhost` → API Gateway |
+| API Gateway | 4000 (internal) | JWT + RBAC, round-robin load balancer, web console |
 | Registration | 5001 | Sign-up, admin user management |
 | Authentication | 5002 | Login, JWT issuing |
 | Room | 5003 | Rooms, locks, classroom enrollment |

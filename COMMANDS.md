@@ -56,7 +56,7 @@ kubectl config use-context docker-desktop
 kubectl get nodes
 ```
 
-**6. Stop the old midterm app**, if it's running (it blocks port 4000).
+**6. Stop the old midterm app**, if it's running, so nobody opens the old version by mistake.
 Run this inside the old midterm folder. "no configuration file" means nothing to stop, which is fine.
 
 ```powershell
@@ -119,7 +119,7 @@ node run_tests.js
 > ```
 
 **Postman (optional):** in Postman click **Import**, drag in both files from the
-`postman` folder, choose the **Smart Campus - Kubernetes (localhost)** environment,
+`postman` folder, choose the **Smart Campus - Kubernetes via Ingress (localhost)** environment,
 and run the folders in order (1 → 9).
 
 ---

@@ -106,6 +106,9 @@ foreach ($file in '03-storage.yaml', '04-mongodb.yaml', '10-services.yaml', '20-
     }
     Invoke-Native "apply $file" { $yaml | kubectl.exe apply -f - }
 }
+# NetworkPolicies add up, so remove the older, looser gateway rule from previous
+# deployments; otherwise it would keep letting any pod reach the gateway.
+Invoke-Native 'remove old policy' { kubectl.exe -n $ns delete networkpolicy allow-gateway-from-anywhere --ignore-not-found }
 
 if ($InstallMetricsServer) {
     Write-Host '==> Installing metrics-server' -ForegroundColor Cyan

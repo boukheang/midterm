@@ -1,11 +1,12 @@
 # Network isolation inside the cluster ("zero trust" between pods).
-#   outside world -> API Gateway        (allowed, port 4000)
-#   API Gateway   -> backend services   (allowed)
-#   backend       -> MongoDB            (allowed, port 27017)
-#   everything else                     (blocked)
-# So even a pod inside the cluster cannot call a service directly with forged
-# X-User-* headers; only the gateway, which verifies the JWT, can reach them.
+#   Ingress Controller -> API Gateway        (allowed, port 4000)
+#   API Gateway        -> backend services   (allowed)
+#   backend            -> MongoDB            (allowed, port 27017)
+#   everything else                          (blocked)
+# So the Ingress is the only way in, and even a pod inside the cluster cannot call
+# a service directly with forged X-User-* headers.
 # Enforced by the cluster's network plugin (kindnet on Docker Desktop, Calico/Cilium, ...).
+# (kubectl port-forward used by scripts/open-app.ps1 -Direct is not affected.)
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -19,7 +20,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-gateway-from-anywhere
+  name: allow-gateway-from-ingress-controller
   namespace: smart-campus
 spec:
   podSelector:
@@ -28,7 +29,11 @@ spec:
   policyTypes:
     - Ingress
   ingress:
-    - ports:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
         - port: 4000
           protocol: TCP
 ---

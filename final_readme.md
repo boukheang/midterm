@@ -164,7 +164,7 @@ use, so run `scripts\dashboard.ps1` once **before** the presentation while onlin
 
 Import both files from [`postman/`](postman/) into Postman:
 `SmartCampus-Final.postman_collection.json` and `SmartCampus-Kubernetes.postman_environment.json`.
-Select the **Smart Campus - Kubernetes (localhost)** environment, then run the folders
+Select the **Smart Campus - Kubernetes via Ingress (localhost)** environment, then run the folders
 **in order** (or use *Run collection*). The first request creates fresh test users and a
 room, tokens are saved automatically, and folder 9 deletes everything again.
 
@@ -175,7 +175,7 @@ room, tokens are saved automatically, and folder 9 deletes everything again.
 | 6. API Gateway · 7. Permission · 8. Emergency Alert | Sokhadom |
 
 Every request has tests, so the **Test Results** tab shows PASS for each check.
-If the app runs on another port, change `baseUrl` in the environment.
+Requests go through the Ingress at `http://localhost`. If you used `open-app.ps1 -Port 8080`, change `baseUrl` to `http://localhost:8080`.
 
 ## Security model
 
