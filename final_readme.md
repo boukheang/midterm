@@ -79,6 +79,19 @@ Kubernetes manifests are in [`k8s/`](k8s/):
 > If port 4000 is already in use (e.g. an old `docker compose` stack of the midterm),
 > stop it with `docker compose down`, or run `scripts\open-app.ps1 -Port 8080` and open http://localhost:8080.
 
+### Using the published Docker Hub images
+
+All 9 service images are public on Docker Hub as `sokhadum/smart-campus-<service>`, and
+`k8s/*.yaml` points at one pinned build tag of them. Any laptop can deploy without building:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -UseDockerHub -InstallMetricsServer
+```
+
+To publish a new version (signed in to Docker Hub as the image owner), run
+`scripts\build-images.ps1 -Registry sokhadum -Push`, then commit the updated `k8s/*.yaml`.
+Without `-UseDockerHub`, `deploy.ps1` builds the images locally instead (works offline).
+
 After a code change, just run `scripts\deploy.ps1` again. Each build gets a unique
 image tag (e.g. `build-20261118-0130`), so Kubernetes always rolls out the code you
 just built. With a plain `:local` tag, a node that already has that tag would keep

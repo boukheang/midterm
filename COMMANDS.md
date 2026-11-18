@@ -67,8 +67,17 @@ docker compose down
 
 ## B. Deploy and open the app
 
-**7. Build, load and deploy everything** (5–10 minutes the first time; wait for
-*"Smart Campus is running."*)
+**7. Deploy everything.** Pick **one** of the two options and wait for
+*"Smart Campus is running."*
+
+**Option A (recommended): download the ready-made images from Docker Hub**
+(`sokhadum/smart-campus-*`, public). No building; needs internet.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -UseDockerHub -InstallMetricsServer
+```
+
+**Option B: build the images on this laptop** (5–10 minutes the first time; works offline after that)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -InstallMetricsServer
@@ -180,11 +189,24 @@ kubectl -n smart-campus scale deploy access-log-service --replicas=2
 git pull
 ```
 
-**2. Rebuild and redeploy**
+**2. Redeploy** with the option you used in step 7
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -UseDockerHub
+```
+
+or
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1
 ```
+
+> **Publishing new Docker Hub images (Sokhadom only)**, after changing code.
+> Must be signed in to Docker Hub as `sokhadum`. Then commit and push the
+> updated `k8s/*.yaml` so everyone pulls the new version:
+> ```powershell
+> powershell -ExecutionPolicy Bypass -File scripts\build-images.ps1 -Registry sokhadum -Push
+> ```
 
 **3. Restart the app window:** in the terminal running `open-app.ps1`, press
 **Ctrl+C**, then run it again:
@@ -223,7 +245,7 @@ kubectl -n smart-campus describe pod POD-NAME
 kubectl -n smart-campus logs deploy/registration-service
 ```
 
-**Redeploy without rebuilding the images** (faster)
+**Redeploy the last local build without rebuilding** (faster)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -SkipBuild

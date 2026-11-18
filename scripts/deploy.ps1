@@ -5,8 +5,10 @@
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1
   powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -SkipBuild -InstallMetricsServer
+  powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -UseDockerHub   # pull published images, no build
 #>
 param(
+    [switch]$UseDockerHub,           # use the Docker Hub images named in k8s/*.yaml (no local build; needs internet)
     [switch]$SkipBuild,              # re-use the images from the last build-images.ps1 run
     [switch]$InstallMetricsServer,   # needed for the HorizontalPodAutoscaler and Dashboard CPU graphs
     [string]$AdminEmail = 'admin@campus.edu',
@@ -37,14 +39,20 @@ function Test-Native {
     finally { $ErrorActionPreference = $previous }
 }
 
-if (-not $SkipBuild) {
+if ($UseDockerHub) {
+    if ((Get-Content 'k8s/20-deployments.yaml' -Raw) -match 'image: smart-campus/[a-z-]+:local') {
+        throw 'k8s/*.yaml still points at local images. Publish first: scripts\build-images.ps1 -Registry <dockerhub-username> -Push'
+    }
+    Write-Host '==> Using the published Docker Hub images from k8s/*.yaml (Kubernetes downloads them)' -ForegroundColor Cyan
+}
+elseif (-not $SkipBuild) {
     & (Join-Path $PSScriptRoot 'build-images.ps1')
 }
 
-# Image tag produced by the last build (falls back to ':local').
+# Local mode: image tag produced by the last build (falls back to ':local').
 $tagFile = Join-Path $PSScriptRoot '.image-tag'
 $imageTag = if (Test-Path $tagFile) { (Get-Content $tagFile -Raw).Trim() } else { 'local' }
-Write-Host "==> Deploying images tagged '$imageTag'" -ForegroundColor Cyan
+if (-not $UseDockerHub) { Write-Host "==> Deploying locally built images tagged '$imageTag'" -ForegroundColor Cyan }
 
 Write-Host '==> Namespace and configuration' -ForegroundColor Cyan
 Invoke-Native 'namespace' { kubectl.exe apply -f k8s/00-namespace.yaml }
@@ -77,8 +85,12 @@ else {
 
 Write-Host '==> Storage, database, services' -ForegroundColor Cyan
 foreach ($file in '03-storage.yaml', '04-mongodb.yaml', '10-services.yaml', '20-deployments.yaml', '21-gateway.yaml', '25-autoscaling.yaml', '30-network-policy.yaml') {
-    # Point our images at this build's tag; everything else is applied unchanged.
-    $yaml = (Get-Content "k8s/$file" -Raw) -replace 'image: smart-campus/([a-z-]+):local', "image: smart-campus/`$1:$imageTag"
+    # Local mode: point our images (whatever registry the YAML names) at the locally
+    # built tag. Docker Hub mode: apply the YAML exactly as committed.
+    $yaml = Get-Content "k8s/$file" -Raw
+    if (-not $UseDockerHub) {
+        $yaml = [regex]::Replace($yaml, 'image: (?:[\w.-]+/)?smart-campus[/-]([a-z-]+):\S+', "image: smart-campus/`$1:$imageTag")
+    }
     Invoke-Native "apply $file" { $yaml | kubectl.exe apply -f - }
 }
 

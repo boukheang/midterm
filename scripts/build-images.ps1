@@ -10,12 +10,20 @@
     - kind                                                     -> kind.exe load docker-image
   Also pre-loads the third-party images (mongo, busybox) so the demo works offline.
 
+  With -Registry <dockerhub-username> -Push it also publishes all 9 images to
+  Docker Hub as <username>/smart-campus-<service>:<build-tag> (and :latest) and
+  points the Kubernetes YAML at those exact images. Log in first with `docker login`.
+
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\build-images.ps1
+  powershell -ExecutionPolicy Bypass -File scripts\build-images.ps1 -Registry yourname -Push
 #>
 param(
-    [switch]$NoLoad   # only build, do not load into the cluster
+    [switch]$NoLoad,          # only build, do not load into the cluster
+    [string]$Registry = '',   # Docker Hub username (or registry/namespace) to publish to
+    [switch]$Push             # push to $Registry and update the YAML image references
 )
+if ($Push -and -not $Registry) { throw 'Use -Push together with -Registry <dockerhub-username>.' }
 
 $ErrorActionPreference = 'Stop'
 Set-Location (Join-Path $PSScriptRoot '..')
@@ -64,6 +72,29 @@ foreach ($name in $services.Keys) {
 }
 # deploy.ps1 reads this to point the Deployments at the images just built.
 Set-Content -Path (Join-Path $PSScriptRoot '.image-tag') -Value $buildTag -Encoding ASCII
+
+if ($Registry) {
+    foreach ($name in $services.Keys) {
+        $remote = "$Registry/smart-campus-${name}"
+        Invoke-Native "tag $remote" { docker.exe tag "smart-campus/${name}:$buildTag" "${remote}:$buildTag" }
+        Invoke-Native "tag $remote latest" { docker.exe tag "smart-campus/${name}:$buildTag" "${remote}:latest" }
+        if ($Push) {
+            Write-Host "==> Pushing ${remote}:$buildTag" -ForegroundColor Cyan
+            Invoke-Native "push ${remote}:$buildTag" { docker.exe push "${remote}:$buildTag" }
+            Invoke-Native "push ${remote}:latest" { docker.exe push "${remote}:latest" }
+        }
+    }
+    if ($Push) {
+        # Point the committed YAML at the exact published images (pinned tag, not
+        # :latest, so every cluster runs the same build).
+        foreach ($file in 'k8s/20-deployments.yaml', 'k8s/21-gateway.yaml') {
+            $yaml = Get-Content $file -Raw
+            $yaml = [regex]::Replace($yaml, 'image: (?:[\w.-]+/)?smart-campus[/-]([a-z-]+):\S+', "image: $Registry/smart-campus-`$1:$buildTag")
+            [System.IO.File]::WriteAllText((Resolve-Path $file), $yaml)
+        }
+        Write-Host "Published all images to $Registry and updated k8s/*.yaml (tag $buildTag)." -ForegroundColor Green
+    }
+}
 
 foreach ($img in $thirdParty) {
     Write-Host "==> Pulling $img" -ForegroundColor Cyan
