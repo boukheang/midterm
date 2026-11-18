@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart Campus Demo Prep</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single reading column with a sticky owner nav; each microservice is a "badge" card keyed to its owner's color. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #16202c;
+  --muted: #5a6676;
+  --line: #dde2e9;
+  --accent: #2456c9;
+  --code-bg: #eef1f5;
+  --granted: #137a4b;
+  --granted-bg: #e3f4ec;
+  --denied: #b42318;
+  --denied-bg: #fbe9e7;
+  --sok: #7a3fd1;
+  --sok-bg: #f1eafc;
+  --bou: #c2410c;
+  --bou-bg: #fdeee5;
+  --pan: #0f7d84;
+  --pan-bg: #e2f4f4;
+  --k8s: #2456c9;
+  --k8s-bg: #e7eefc;
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141b; --surface: #161d27; --ink: #e6ebf2; --muted: #9aa6b6; --line: #273242;
+    --accent: #7ea2ff; --code-bg: #1d2633;
+    --granted: #4fd08f; --granted-bg: #12301f; --denied: #ff8a7a; --denied-bg: #3a1714;
+    --sok: #b796f5; --sok-bg: #261b3b; --bou: #ff9a62; --bou-bg: #3a2014;
+    --pan: #4fd1d9; --pan-bg: #0f2e30; --k8s: #7ea2ff; --k8s-bg: #18233d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141b; --surface: #161d27; --ink: #e6ebf2; --muted: #9aa6b6; --line: #273242;
+  --accent: #7ea2ff; --code-bg: #1d2633;
+  --granted: #4fd08f; --granted-bg: #12301f; --denied: #ff8a7a; --denied-bg: #3a1714;
+  --sok: #b796f5; --sok-bg: #261b3b; --bou: #ff9a62; --bou-bg: #3a2014;
+  --pan: #4fd1d9; --pan-bg: #0f2e30; --k8s: #7ea2ff; --k8s-bg: #18233d;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body);
+  font-size: 15.5px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 920px; margin: 0 auto; padding-block: 28px 80px; display: grid; gap: 40px; }
+h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.01em; }
+h2 { font-size: 26px; }
+h3 { font-size: 20px; }
+h4 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+p { margin: 0; max-width: 70ch; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+ul, ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+li { max-width: 70ch; }
+section { display: grid; gap: 18px; scroll-margin-top: 70px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 17px; color: var(--muted); }
+
+/* Sticky owner nav */
+nav.owners {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  padding: 10px max(16px, env(safe-area-inset-left, 0px));
+}
+nav.owners .inner { max-width: 920px; margin: 0 auto; display: flex; gap: 8px; flex-wrap: wrap; }
+nav.owners a {
+  text-decoration: none; font-weight: 600; font-size: 13.5px; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--ink); background: var(--surface);
+}
+nav.owners a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+nav.owners a.sok { color: var(--sok); border-color: var(--sok); }
+nav.owners a.bou { color: var(--bou); border-color: var(--bou); }
+nav.owners a.pan { color: var(--pan); border-color: var(--pan); }
+nav.owners a.k8s { color: var(--k8s); border-color: var(--k8s); }
+
+/* Status strip */
+.status { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; }
+.stat strong { font-family: var(--font-display); font-size: 15px; }
+.pill { display: inline-block; font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; padding: 2px 8px; border-radius: 999px; letter-spacing: 0.03em; }
+.pill.ok { color: var(--granted); background: var(--granted-bg); }
+.pill.warn { color: var(--denied); background: var(--denied-bg); }
+
+/* Team table */
+.team { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.member { border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; border: 1px solid var(--line); background: var(--surface); }
+.member.sok { border-top: 4px solid var(--sok); }
+.member.bou { border-top: 4px solid var(--bou); }
+.member.pan { border-top: 4px solid var(--pan); }
+.member h3 { font-size: 18px; }
+.member ul { list-style: none; padding: 0; gap: 4px; }
+
+/* Diagrams */
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow-x: auto; }
+.diagram pre.mermaid { margin: 0; background: transparent; }
+.caption { font-size: 13.5px; color: var(--muted); }
+
+/* Service cards */
+.owner-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding-bottom: 8px; border-bottom: 2px solid var(--line); }
+.owner-head.sok { border-color: var(--sok); }
+.owner-head.bou { border-color: var(--bou); }
+.owner-head.pan { border-color: var(--pan); }
+.owner-head.k8s { border-color: var(--k8s); }
+.svc { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: grid; gap: 16px; min-width: 0; }
+.svc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.svc-head .meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { font-family: var(--font-mono); font-size: 12px; padding: 3px 8px; border-radius: 6px; background: var(--code-bg); color: var(--muted); }
+.tag.sok { background: var(--sok-bg); color: var(--sok); }
+.tag.bou { background: var(--bou-bg); color: var(--bou); }
+.tag.pan { background: var(--pan-bg); color: var(--pan); }
+.oneliner { font-size: 16px; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--font-display); font-weight: 600; font-size: 13px; background: var(--code-bg); }
+tr:last-child td { border-bottom: none; }
+td.m { font-family: var(--font-mono); font-size: 12.5px; white-space: nowrap; }
+.who { font-family: var(--font-mono); font-size: 12px; white-space: nowrap; }
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.split > div { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.changed { background: var(--granted-bg); border-radius: 8px; padding: 12px 14px; display: grid; gap: 6px; }
+.changed h4 { color: var(--granted); }
+
+/* Q&A */
+.qa { display: grid; gap: 10px; }
+.q { border-left: 3px solid var(--line); padding: 2px 0 2px 14px; display: grid; gap: 4px; }
+.q b { font-family: var(--font-display); font-weight: 600; }
+.q p { color: var(--ink); }
+.q.honest { border-left-color: var(--denied); }
+
+/* Decision ladder */
+.ladder { display: grid; gap: 6px; counter-reset: step; list-style: none; padding: 0; }
+.ladder li { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 8px; background: var(--code-bg); max-width: none; }
+.ladder li::before { counter-increment: step; content: counter(step); font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.ladder .res { font-family: var(--font-mono); font-size: 12px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.ladder .g { color: var(--granted); background: var(--granted-bg); }
+.ladder .d { color: var(--denied); background: var(--denied-bg); }
+
+.glossary { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; }
+.term b { font-family: var(--font-display); }
+.term .where { font-size: 13px; color: var(--muted); }
+
+.runsheet { display: grid; gap: 8px; list-style: none; padding: 0; }
+.runsheet li { display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; max-width: none; }
+.runsheet .by { font-weight: 600; font-size: 13.5px; }
+.by.sok { color: var(--sok); } .by.bou { color: var(--bou); } .by.pan { color: var(--pan); } .by.all { color: var(--muted); }
+@media (max-width: 520px) {
+  .runsheet li { grid-template-columns: 1fr; gap: 2px; }
+  .svc { padding: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+<style>
+  /* Pre-rendered diagrams: always on a white card so they read in light and dark mode. */
+  .diagram-svg { background: #ffffff; border-radius: 8px; padding: 12px; overflow-x: auto; }
+  .diagram-svg svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+</style>
+</head>
+<body>
+
+
+<nav class="owners" aria-label="Jump to section">
+  <div class="inner">
+    <a href="#overview">Overview</a>
+    <a class="sok" href="#sokhadom">Sokhadom</a>
+    <a class="bou" href="#boukheang">Boukheang</a>
+    <a class="pan" href="#panhavan">Panhavan</a>
+    <a class="k8s" href="#kubernetes">Kubernetes</a>
+    <a href="#questions">Team questions</a>
+    <a href="#runsheet">Demo run sheet</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<header id="overview" style="display:grid;gap:14px">
+  <div class="eyebrow">Smart Campus Access Control · Final project · branch sokhadomfinal</div>
+  <h1>Smart Campus Demo Prep</h1>
+  <p class="lede">How each microservice works, what changed from the midterm, and the questions the professor is likely to ask, with answers. Each person owns three services; Sokhadom also owns the web dashboard UI.</p>
+</header>
+
+<section aria-label="Project status">
+  <div class="status">
+    <div class="stat"><span class="pill ok">VERIFIED</span><strong>Runs on Kubernetes</strong><span>Deployed to Docker Desktop Kubernetes. All 35 automated checks in <code>run_tests.js</code> pass. The NetworkPolicy is confirmed to block non-gateway pods.</span></div>
+    <div class="stat"><span class="pill ok">VERIFIED</span><strong>Live scaling works</strong><span>Scaling Access Log to 3 pods: the gateway found the new pod in seconds and rotated across all 3.</span></div>
+    <div class="stat"><span class="pill warn">BEFORE DEMO</span><strong>Use branch <code>sokhadomfinal</code></strong><span>It isn't merged into <code>main</code>. Run <code>scripts\dashboard.ps1</code> once while online, and change the old Atlas password.</span></div>
+  </div>
+</section>
+
+<section aria-labelledby="team-h">
+  <h2 id="team-h">Who presents what</h2>
+  <div class="team">
+    <div class="member sok"><h3>Sokhadom</h3><ul><li>API Gateway <span class="tag">4000</span></li><li>Permission <span class="tag">5004</span></li><li>Emergency Alert <span class="tag">5006</span></li><li>Web dashboard UI</li></ul></div>
+    <div class="member bou"><h3>Boukheang</h3><ul><li>Registration <span class="tag">5001</span></li><li>Authentication <span class="tag">5002</span></li><li>Access Log <span class="tag">5005</span></li></ul></div>
+    <div class="member pan"><h3>Panhavan</h3><ul><li>Room <span class="tag">5003</span></li><li>Student <span class="tag">5007</span></li><li>Teacher <span class="tag">5008</span></li></ul></div>
+  </div>
+</section>
+
+<section aria-labelledby="arch-h">
+  <h2 id="arch-h">The big picture</h2>
+  <p>The browser talks to only one thing: the <b>API Gateway</b>. The gateway checks the login token, checks the user's role, and forwards the request to the right internal service. Internal services can't be reached from outside the cluster. All services use one MongoDB database, and each service owns its own collection.</p>
+  <div class="diagram">
+<div class="diagram-svg" role="img"><svg aria-roledescription="flowchart-v2" role="graphics-document document" viewBox="-8 -8 1134.5234375 781.34375" style="max-width:100%;height:auto;" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="100%" id="mermaid-1795017890271"><style>#mermaid-1795017890271{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#mermaid-1795017890271 .error-icon{fill:#552222;}#mermaid-1795017890271 .error-text{fill:#552222;stroke:#552222;}#mermaid-1795017890271 .edge-thickness-normal{stroke-width:2px;}#mermaid-1795017890271 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1795017890271 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1795017890271 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1795017890271 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1795017890271 .marker{fill:#333333;stroke:#333333;}#mermaid-1795017890271 .marker.cross{stroke:#333333;}#mermaid-1795017890271 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-1795017890271 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#333;}#mermaid-1795017890271 .cluster-label text{fill:#333;}#mermaid-1795017890271 .cluster-label span,#mermaid-1795017890271 p{color:#333;}#mermaid-1795017890271 .label text,#mermaid-1795017890271 span,#mermaid-1795017890271 p{fill:#333;color:#333;}#mermaid-1795017890271 .node rect,#mermaid-1795017890271 .node circle,#mermaid-1795017890271 .node ellipse,#mermaid-1795017890271 .node polygon,#mermaid-1795017890271 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mermaid-1795017890271 .flowchart-label text{text-anchor:middle;}#mermaid-1795017890271 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1795017890271 .node .label{text-align:center;}#mermaid-1795017890271 .node.clickable{cursor:pointer;}#mermaid-1795017890271 .arrowheadPath{fill:#333333;}#mermaid-1795017890271 .edgePath .path{stroke:#333333;stroke-width:2.0px;}#mermaid-1795017890271 .flowchart-link{stroke:#333333;fill:none;}#mermaid-1795017890271 .edgeLabel{background-color:#e8e8e8;text-align:center;}#mermaid-1795017890271 .edgeLabel rect{opacity:0.5;background-color:#e8e8e8;fill:#e8e8e8;}#mermaid-1795017890271 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mermaid-1795017890271 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mermaid-1795017890271 .cluster text{fill:#333;}#mermaid-1795017890271 .cluster span,#mermaid-1795017890271 p{color:#333;}#mermaid-1795017890271 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1795017890271 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mermaid-1795017890271 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker orient="auto" markerHeight="12" markerWidth="12" markerUnits="userSpaceOnUse" refY="5" refX="6" viewBox="0 0 10 10" class="marker flowchart" id="mermaid-1795017890271_flowchart-pointEnd"><path style="stroke-width: 1; stroke-dasharray: 1, 0;" class="arrowMarkerPath" d="M 0 0 L 10 5 L 0 10 z"></path></marker><marker orient="auto" markerHeight="12" markerWidth="12" markerUnits="userSpaceOnUse" refY="5" refX="4.5" viewBox="0 0 10 10" class="marker flowchart" id="mermaid-1795017890271_flowchart-pointStart"><path style="stroke-width: 1; stroke-dasharray: 1, 0;" class="arrowMarkerPath" d="M 0 5 L 10 10 L 10 0 z"></path></marker><marker orient="auto" markerHeight="11" markerWidth="11" markerUnits="userSpaceOnUse" refY="5" refX="11" viewBox="0 0 10 10" class="marker flowchart" id="mermaid-1795017890271_flowchart-circleEnd"><circle style="stroke-width: 1; stroke-dasharray: 1, 0;" class="arrowMarkerPath" r="5" cy="5" cx="5"></circle></marker><marker orient="auto" markerHeight="11" markerWidth="11" markerUnits="userSpaceOnUse" refY="5" refX="-1" viewBox="0 0 10 10" class="marker flowchart" id="mermaid-1795017890271_flowchart-circleStart"><circle style="stroke-width: 1; stroke-dasharray: 1, 0;" class="arrowMarkerPath" r="5" cy="5" cx="5"></circle></marker><marker orient="auto" markerHeight="11" markerWidth="11" markerUnits="userSpaceOnUse" refY="5.2" refX="12" viewBox="0 0 11 11" class="marker cross flowchart" id="mermaid-1795017890271_flowchart-crossEnd"><path style="stroke-width: 2; stroke-dasharray: 1, 0;" class="arrowMarkerPath" d="M 1,1 l 9,9 M 10,1 l -9,9"></path></marker><marker orient="auto" markerHeight="11" markerWidth="11" markerUnits="userSpaceOnUse" refY="5.2" refX="-1" viewBox="0 0 11 11" class="marker cross flowchart" id="mermaid-1795017890271_flowchart-crossStart"><path style="stroke-width: 2; stroke-dasharray: 1, 0;" class="arrowMarkerPath" d="M 1,1 l 9,9 M 10,1 l -9,9"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-U LE-ING" id="L-U-ING-0" d="M160.383,382.672L169.979,382.672C179.576,382.672,198.768,382.672,217.078,382.672C235.387,382.672,252.813,382.672,261.526,382.672L270.239,382.672"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-ING LE-GW" id="L-ING-GW-0" d="M410.742,382.672L414.909,382.672C419.076,382.672,427.409,382.672,434.859,382.672C442.309,382.672,448.876,382.672,452.159,382.672L455.442,382.672"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-GW LE-REG" id="L-GW-REG-0" d="M583.39,349.578L609.716,294.698C636.042,239.818,688.693,130.057,727.023,75.177C765.353,20.297,789.363,20.297,801.367,20.297L813.372,20.297"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-GW LE-AUTH" id="L-GW-AUTH-0" d="M588.682,349.578L614.126,309.797C639.569,270.016,690.457,190.453,726.193,150.672C761.929,110.891,782.514,110.891,792.806,110.891L803.098,110.891"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-GW LE-ROOM" id="L-GW-ROOM-0" d="M599.265,349.578L622.945,324.896C646.625,300.214,693.984,250.849,733.548,226.167C773.111,201.484,804.878,201.484,820.762,201.484L836.645,201.484"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-GW LE-PERM" id="L-GW-PERM-0" d="M631.015,349.578L649.403,339.995C667.791,330.411,704.567,311.245,735.782,301.661C766.996,292.078,792.649,292.078,805.475,292.078L818.302,292.078"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-GW LE-AL1" id="L-GW-AL1-0" d="M674.289,382.672L685.465,382.672C696.641,382.672,718.992,382.672,742.907,382.672C766.822,382.672,792.3,382.672,805.039,382.672L817.778,382.672"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-GW LE-AL2" id="L-GW-AL2-0" d="M631.015,415.766L649.403,425.349C667.791,434.932,704.567,454.099,735.653,463.682C766.739,473.266,792.133,473.266,804.831,473.266L817.528,473.266"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-GW LE-EM" id="L-GW-EM-0" d="M599.265,415.766L622.945,440.448C646.625,465.13,693.984,514.495,730.298,539.177C766.611,563.859,791.878,563.859,804.512,563.859L817.145,563.859"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-GW LE-ST" id="L-GW-ST-0" d="M588.682,415.766L614.126,455.547C639.569,495.328,690.457,574.891,730.418,614.672C770.379,654.453,799.415,654.453,813.932,654.453L828.45,654.453"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-GW LE-TE" id="L-GW-TE-0" d="M583.39,415.766L609.716,470.646C636.042,525.526,688.693,635.286,729.492,690.167C770.291,745.047,799.238,745.047,813.711,745.047L828.184,745.047"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-REG LE-DB" id="L-REG-DB-0" d="M963.594,20.297L969.473,20.297C975.352,20.297,987.109,20.297,1003.232,71.657C1019.354,123.018,1039.842,225.738,1050.085,277.099L1060.329,328.459"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-AUTH LE-DB" id="L-AUTH-DB-0" d="M973.867,110.891L978.034,110.891C982.201,110.891,990.534,110.891,1004.344,147.196C1018.154,183.501,1037.441,256.111,1047.085,292.416L1056.728,328.721"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-ROOM LE-DB" id="L-ROOM-DB-0" d="M940.32,201.484L950.078,201.484C959.836,201.484,979.352,201.484,997.562,222.815C1015.772,244.146,1032.678,286.807,1041.13,308.138L1049.583,329.468"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-PERM LE-DB" id="L-PERM-DB-0" d="M958.664,292.078L965.365,292.078C972.065,292.078,985.466,292.078,997.154,299.047C1008.842,306.015,1018.816,319.952,1023.803,326.921L1028.791,333.889"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-AL1 LE-DB" id="L-AL1-DB-0" d="M959.188,382.672L965.801,382.672C972.414,382.672,985.641,382.672,995.537,382.672C1005.434,382.672,1012.001,382.672,1015.284,382.672L1018.567,382.672"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-AL2 LE-DB" id="L-AL2-DB-0" d="M959.438,473.266L966.009,473.266C972.581,473.266,985.724,473.266,997.283,466.297C1008.842,459.329,1018.816,445.392,1023.803,438.423L1028.791,431.455"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-EM LE-DB" id="L-EM-DB-0" d="M959.82,563.859L966.328,563.859C972.836,563.859,985.852,563.859,1000.812,542.529C1015.772,521.198,1032.678,478.537,1041.13,457.206L1049.583,435.876"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-ST LE-DB" id="L-ST-DB-0" d="M948.516,654.453L956.908,654.453C965.299,654.453,982.083,654.453,1000.119,618.148C1018.154,581.843,1037.441,509.233,1047.085,472.928L1056.728,436.623"></path><path marker-end="url(#mermaid-1795017890271_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-TE LE-DB" id="L-TE-DB-0" d="M948.781,745.047L957.129,745.047C965.477,745.047,982.172,745.047,1000.763,693.686C1019.354,642.326,1039.842,539.605,1050.085,488.245L1060.329,436.884"></path></g><g class="edgeLabels"><g transform="translate(217.9609375, 382.671875)" class="edgeLabel"><g transform="translate(-32.578125, -12.796875)" class="label"><foreignObject height="25.59375" width="65.15625"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel">HTTP :80</span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g transform="translate(741.34375, 382.671875)" class="edgeLabel"><g transform="translate(-42.0546875, -12.796875)" class="label"><foreignObject height="25.59375" width="84.109375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel">round-robin</span></div></foreignObject></g></g><g transform="translate(741.34375, 473.265625)" class="edgeLabel"><g transform="translate(-42.0546875, -12.796875)" class="label"><foreignObject height="25.59375" width="84.109375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel">round-robin</span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g></g><g class="nodes"><g transform="translate(80.19140625, 382.671875)" data-id="U" data-node="true" id="flowchart-U-0" class="node default default flowchart-label"><rect height="40.59375" width="160.3828125" y="-20.296875" x="-80.19140625" ry="20.296875" rx="20.296875" style=""></rect><g transform="translate(-67.6171875, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="135.234375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Browser / Postman</span></div></foreignObject></g></g><g transform="translate(343.140625, 382.671875)" data-id="ING" data-node="true" id="flowchart-ING-1" class="node default default flowchart-label"><rect height="66.1875" width="135.203125" y="-33.09375" x="-67.6015625" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-60.1015625, -25.59375)" style="" class="label"><rect></rect><foreignObject height="51.1875" width="120.203125"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Ingress<br>NGINX controller</span></div></foreignObject></g></g><g transform="translate(567.515625, 382.671875)" data-id="GW" data-node="true" id="flowchart-GW-3" class="node default default flowchart-label"><rect height="66.1875" width="213.546875" y="-33.09375" x="-106.7734375" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-99.2734375, -25.59375)" style="" class="label"><rect></rect><foreignObject height="51.1875" width="198.546875"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">API Gateway<br>JWT + roles + load balancer</span></div></foreignObject></g></g><g transform="translate(891.1328125, 20.296875)" data-id="REG" data-node="true" id="flowchart-REG-5" class="node default default flowchart-label"><rect height="40.59375" width="144.921875" y="-20.296875" x="-72.4609375" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-64.9609375, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="129.921875"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Registration :5001</span></div></foreignObject></g></g><g transform="translate(891.1328125, 110.890625)" data-id="AUTH" data-node="true" id="flowchart-AUTH-7" class="node default default flowchart-label"><rect height="40.59375" width="165.46875" y="-20.296875" x="-82.734375" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-75.234375, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="150.46875"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Authentication :5002</span></div></foreignObject></g></g><g transform="translate(891.1328125, 201.484375)" data-id="ROOM" data-node="true" id="flowchart-ROOM-9" class="node default default flowchart-label"><rect height="40.59375" width="98.375" y="-20.296875" x="-49.1875" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-41.6875, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="83.375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Room :5003</span></div></foreignObject></g></g><g transform="translate(891.1328125, 292.078125)" data-id="PERM" data-node="true" id="flowchart-PERM-11" class="node default default flowchart-label"><rect height="40.59375" width="135.0625" y="-20.296875" x="-67.53125" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-60.03125, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="120.0625"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Permission :5004</span></div></foreignObject></g></g><g transform="translate(891.1328125, 382.671875)" data-id="AL1" data-node="true" id="flowchart-AL1-13" class="node default default flowchart-label"><rect height="40.59375" width="136.109375" y="-20.296875" x="-68.0546875" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-60.5546875, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="121.109375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Access Log pod A</span></div></foreignObject></g></g><g transform="translate(891.1328125, 473.265625)" data-id="AL2" data-node="true" id="flowchart-AL2-15" class="node default default flowchart-label"><rect height="40.59375" width="136.609375" y="-20.296875" x="-68.3046875" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-60.8046875, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="121.609375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Access Log pod B</span></div></foreignObject></g></g><g transform="translate(891.1328125, 563.859375)" data-id="EM" data-node="true" id="flowchart-EM-17" class="node default default flowchart-label"><rect height="40.59375" width="137.375" y="-20.296875" x="-68.6875" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-61.1875, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="122.375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Emergency :5006</span></div></foreignObject></g></g><g transform="translate(891.1328125, 654.453125)" data-id="ST" data-node="true" id="flowchart-ST-19" class="node default default flowchart-label"><rect height="40.59375" width="114.765625" y="-20.296875" x="-57.3828125" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-49.8828125, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="99.765625"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Student :5007</span></div></foreignObject></g></g><g transform="translate(891.1328125, 745.046875)" data-id="TE" data-node="true" id="flowchart-TE-21" class="node default default flowchart-label"><rect height="40.59375" width="115.296875" y="-20.296875" x="-57.6484375" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-50.1484375, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="100.296875"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Teacher :5008</span></div></foreignObject></g></g><g transform="translate(1071.1953125, 382.671875)" data-id="DB" data-node="true" id="flowchart-DB-31" class="node default default flowchart-label"><path transform="translate(-47.328125,-49.25358781476739)" d="M 0,10.773225209844929 a 47.328125,10.773225209844929 0,0,0 94.65625 0 a 47.328125,10.773225209844929 0,0,0 -94.65625 0 l 0,76.96072520984492 a 47.328125,10.773225209844929 0,0,0 94.65625 0 l 0,-76.96072520984492" style=""></path><g transform="translate(-39.828125, -25.59375)" style="" class="label"><rect></rect><foreignObject height="51.1875" width="79.65625"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">MongoDB<br>StatefulSet</span></div></foreignObject></g></g></g></g></g></svg></div>
+  </div>
+  <p class="caption">The only way in from outside is the <b>Ingress</b> (NGINX Ingress Controller). It forwards to the API Gateway, whose Service is internal (ClusterIP) like every other service.</p>
+
+  <h3>What happens on every request</h3>
+  <div class="diagram">
+<div class="diagram-svg" role="img"><svg aria-roledescription="sequence" role="graphics-document document" viewBox="-50 -10 1155 607" style="max-width:100%;height:auto;" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="100%" id="mermaid-1795017890496"><g><rect class="actor actor-bottom" ry="3" rx="3" name="S" height="65" width="150" stroke="#666" fill="#eaeaea" y="521" x="843"></rect><text style="text-anchor: middle; font-size: 16px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="553.5" x="918"><tspan dy="0" x="918">Room service</tspan></text></g><g><rect class="actor actor-bottom" ry="3" rx="3" name="A" height="65" width="150" stroke="#666" fill="#eaeaea" y="521" x="643"></rect><text style="text-anchor: middle; font-size: 16px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="553.5" x="718"><tspan dy="0" x="718">Authentication</tspan></text></g><g><rect class="actor actor-bottom" ry="3" rx="3" name="G" height="65" width="150" stroke="#666" fill="#eaeaea" y="521" x="411"></rect><text style="text-anchor: middle; font-size: 16px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="553.5" x="486"><tspan dy="0" x="486">API Gateway</tspan></text></g><g><rect class="actor actor-bottom" ry="3" rx="3" name="B" height="65" width="150" stroke="#666" fill="#eaeaea" y="521" x="0"></rect><text style="text-anchor: middle; font-size: 16px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="553.5" x="75"><tspan dy="0" x="75">Browser</tspan></text></g><g><line stroke="#999" stroke-width="0.5px" class="200" y2="521" x2="918" y1="5" x1="918" id="actor3"></line><g id="root-3"><rect class="actor actor-top" ry="3" rx="3" name="S" height="65" width="150" stroke="#666" fill="#eaeaea" y="0" x="843"></rect><text style="text-anchor: middle; font-size: 16px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="32.5" x="918"><tspan dy="0" x="918">Room service</tspan></text></g></g><g><line stroke="#999" stroke-width="0.5px" class="200" y2="521" x2="718" y1="5" x1="718" id="actor2"></line><g id="root-2"><rect class="actor actor-top" ry="3" rx="3" name="A" height="65" width="150" stroke="#666" fill="#eaeaea" y="0" x="643"></rect><text style="text-anchor: middle; font-size: 16px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="32.5" x="718"><tspan dy="0" x="718">Authentication</tspan></text></g></g><g><line stroke="#999" stroke-width="0.5px" class="200" y2="521" x2="486" y1="5" x1="486" id="actor1"></line><g id="root-1"><rect class="actor actor-top" ry="3" rx="3" name="G" height="65" width="150" stroke="#666" fill="#eaeaea" y="0" x="411"></rect><text style="text-anchor: middle; font-size: 16px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="32.5" x="486"><tspan dy="0" x="486">API Gateway</tspan></text></g></g><g><line stroke="#999" stroke-width="0.5px" class="200" y2="521" x2="75" y1="5" x1="75" id="actor0"></line><g id="root-0"><rect class="actor actor-top" ry="3" rx="3" name="B" height="65" width="150" stroke="#666" fill="#eaeaea" y="0" x="0"></rect><text style="text-anchor: middle; font-size: 16px; font-weight: 400;" class="actor" alignment-baseline="central" dominant-baseline="central" y="32.5" x="75"><tspan dy="0" x="75">Browser</tspan></text></g></g><style>#mermaid-1795017890496{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#mermaid-1795017890496 .error-icon{fill:#552222;}#mermaid-1795017890496 .error-text{fill:#552222;stroke:#552222;}#mermaid-1795017890496 .edge-thickness-normal{stroke-width:2px;}#mermaid-1795017890496 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1795017890496 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1795017890496 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1795017890496 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1795017890496 .marker{fill:#333333;stroke:#333333;}#mermaid-1795017890496 .marker.cross{stroke:#333333;}#mermaid-1795017890496 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-1795017890496 .actor{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}#mermaid-1795017890496 text.actor&gt;tspan{fill:black;stroke:none;}#mermaid-1795017890496 .actor-line{stroke:grey;}#mermaid-1795017890496 .messageLine0{stroke-width:1.5;stroke-dasharray:none;stroke:#333;}#mermaid-1795017890496 .messageLine1{stroke-width:1.5;stroke-dasharray:2,2;stroke:#333;}#mermaid-1795017890496 #arrowhead path{fill:#333;stroke:#333;}#mermaid-1795017890496 .sequenceNumber{fill:white;}#mermaid-1795017890496 #sequencenumber{fill:#333;}#mermaid-1795017890496 #crosshead path{fill:#333;stroke:#333;}#mermaid-1795017890496 .messageText{fill:#333;stroke:none;}#mermaid-1795017890496 .labelBox{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}#mermaid-1795017890496 .labelText,#mermaid-1795017890496 .labelText&gt;tspan{fill:black;stroke:none;}#mermaid-1795017890496 .loopText,#mermaid-1795017890496 .loopText&gt;tspan{fill:black;stroke:none;}#mermaid-1795017890496 .loopLine{stroke-width:2px;stroke-dasharray:2,2;stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);}#mermaid-1795017890496 .note{stroke:#aaaa33;fill:#fff5ad;}#mermaid-1795017890496 .noteText,#mermaid-1795017890496 .noteText&gt;tspan{fill:black;stroke:none;}#mermaid-1795017890496 .activation0{fill:#f4f4f4;stroke:#666;}#mermaid-1795017890496 .activation1{fill:#f4f4f4;stroke:#666;}#mermaid-1795017890496 .activation2{fill:#f4f4f4;stroke:#666;}#mermaid-1795017890496 .actorPopupMenu{position:absolute;}#mermaid-1795017890496 .actorPopupMenuPanel{position:absolute;fill:#ECECFF;box-shadow:0px 8px 16px 0px rgba(0,0,0,0.2);filter:drop-shadow(3px 5px 2px rgb(0 0 0 / 0.4));}#mermaid-1795017890496 .actor-man line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;}#mermaid-1795017890496 .actor-man circle,#mermaid-1795017890496 line{stroke:hsl(259.6261682243, 59.7765363128%, 87.9019607843%);fill:#ECECFF;stroke-width:2px;}#mermaid-1795017890496 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g></g><defs><symbol height="24" width="24" id="computer"><path d="M2 2v13h20v-13h-20zm18 11h-16v-9h16v9zm-10.228 6l.466-1h3.524l.467 1h-4.457zm14.228 3h-24l2-6h2.104l-1.33 4h18.45l-1.297-4h2.073l2 6zm-5-10h-14v-7h14v7z" transform="scale(.5)"></path></symbol></defs><defs><symbol clip-rule="evenodd" fill-rule="evenodd" id="database"><path d="M12.258.001l.256.004.255.005.253.008.251.01.249.012.247.015.246.016.242.019.241.02.239.023.236.024.233.027.231.028.229.031.225.032.223.034.22.036.217.038.214.04.211.041.208.043.205.045.201.046.198.048.194.05.191.051.187.053.183.054.18.056.175.057.172.059.168.06.163.061.16.063.155.064.15.066.074.033.073.033.071.034.07.034.069.035.068.035.067.035.066.035.064.036.064.036.062.036.06.036.06.037.058.037.058.037.055.038.055.038.053.038.052.038.051.039.05.039.048.039.047.039.045.04.044.04.043.04.041.04.04.041.039.041.037.041.036.041.034.041.033.042.032.042.03.042.029.042.027.042.026.043.024.043.023.043.021.043.02.043.018.044.017.043.015.044.013.044.012.044.011.045.009.044.007.045.006.045.004.045.002.045.001.045v17l-.001.045-.002.045-.004.045-.006.045-.007.045-.009.044-.011.045-.012.044-.013.044-.015.044-.017.043-.018.044-.02.043-.021.043-.023.043-.024.043-.026.043-.027.042-.029.042-.03.042-.032.042-.033.042-.034.041-.036.041-.037.041-.039.041-.04.041-.041.04-.043.04-.044.04-.045.04-.047.039-.048.039-.05.039-.051.039-.052.038-.053.038-.055.038-.055.038-.058.037-.058.037-.06.037-.06.036-.062.036-.064.036-.064.036-.066.035-.067.035-.068.035-.069.035-.07.034-.071.034-.073.033-.074.033-.15.066-.155.064-.16.063-.163.061-.168.06-.172.059-.175.057-.18.056-.183.054-.187.053-.191.051-.194.05-.198.048-.201.046-.205.045-.208.043-.211.041-.214.04-.217.038-.22.036-.223.034-.225.032-.229.031-.231.028-.233.027-.236.024-.239.023-.241.02-.242.019-.246.016-.247.015-.249.012-.251.01-.253.008-.255.005-.256.004-.258.001-.258-.001-.256-.004-.255-.005-.253-.008-.251-.01-.249-.012-.247-.015-.245-.016-.243-.019-.241-.02-.238-.023-.236-.024-.234-.027-.231-.028-.228-.031-.226-.032-.223-.034-.22-.036-.217-.038-.214-.04-.211-.041-.208-.043-.204-.045-.201-.046-.198-.048-.195-.05-.19-.051-.187-.053-.184-.054-.179-.056-.176-.057-.172-.059-.167-.06-.164-.061-.159-.063-.155-.064-.151-.066-.074-.033-.072-.033-.072-.034-.07-.034-.069-.035-.068-.035-.067-.035-.066-.035-.064-.036-.063-.036-.062-.036-.061-.036-.06-.037-.058-.037-.057-.037-.056-.038-.055-.038-.053-.038-.052-.038-.051-.039-.049-.039-.049-.039-.046-.039-.046-.04-.044-.04-.043-.04-.041-.04-.04-.041-.039-.041-.037-.041-.036-.041-.034-.041-.033-.042-.032-.042-.03-.042-.029-.042-.027-.042-.026-.043-.024-.043-.023-.043-.021-.043-.02-.043-.018-.044-.017-.043-.015-.044-.013-.044-.012-.044-.011-.045-.009-.044-.007-.045-.006-.045-.004-.045-.002-.045-.001-.045v-17l.001-.045.002-.045.004-.045.006-.045.007-.045.009-.044.011-.045.012-.044.013-.044.015-.044.017-.043.018-.044.02-.043.021-.043.023-.043.024-.043.026-.043.027-.042.029-.042.03-.042.032-.042.033-.042.034-.041.036-.041.037-.041.039-.041.04-.041.041-.04.043-.04.044-.04.046-.04.046-.039.049-.039.049-.039.051-.039.052-.038.053-.038.055-.038.056-.038.057-.037.058-.037.06-.037.061-.036.062-.036.063-.036.064-.036.066-.035.067-.035.068-.035.069-.035.07-.034.072-.034.072-.033.074-.033.151-.066.155-.064.159-.063.164-.061.167-.06.172-.059.176-.057.179-.056.184-.054.187-.053.19-.051.195-.05.198-.048.201-.046.204-.045.208-.043.211-.041.214-.04.217-.038.22-.036.223-.034.226-.032.228-.031.231-.028.234-.027.236-.024.238-.023.241-.02.243-.019.245-.016.247-.015.249-.012.251-.01.253-.008.255-.005.256-.004.258-.001.258.001zm-9.258 20.499v.01l.001.021.003.021.004.022.005.021.006.022.007.022.009.023.01.022.011.023.012.023.013.023.015.023.016.024.017.023.018.024.019.024.021.024.022.025.023.024.024.025.052.049.056.05.061.051.066.051.07.051.075.051.079.052.084.052.088.052.092.052.097.052.102.051.105.052.11.052.114.051.119.051.123.051.127.05.131.05.135.05.139.048.144.049.147.047.152.047.155.047.16.045.163.045.167.043.171.043.176.041.178.041.183.039.187.039.19.037.194.035.197.035.202.033.204.031.209.03.212.029.216.027.219.025.222.024.226.021.23.02.233.018.236.016.24.015.243.012.246.01.249.008.253.005.256.004.259.001.26-.001.257-.004.254-.005.25-.008.247-.011.244-.012.241-.014.237-.016.233-.018.231-.021.226-.021.224-.024.22-.026.216-.027.212-.028.21-.031.205-.031.202-.034.198-.034.194-.036.191-.037.187-.039.183-.04.179-.04.175-.042.172-.043.168-.044.163-.045.16-.046.155-.046.152-.047.148-.048.143-.049.139-.049.136-.05.131-.05.126-.05.123-.051.118-.052.114-.051.11-.052.106-.052.101-.052.096-.052.092-.052.088-.053.083-.051.079-.052.074-.052.07-.051.065-.051.06-.051.056-.05.051-.05.023-.024.023-.025.021-.024.02-.024.019-.024.018-.024.017-.024.015-.023.014-.024.013-.023.012-.023.01-.023.01-.022.008-.022.006-.022.006-.022.004-.022.004-.021.001-.021.001-.021v-4.127l-.077.055-.08.053-.083.054-.085.053-.087.052-.09.052-.093.051-.095.05-.097.05-.1.049-.102.049-.105.048-.106.047-.109.047-.111.046-.114.045-.115.045-.118.044-.12.043-.122.042-.124.042-.126.041-.128.04-.13.04-.132.038-.134.038-.135.037-.138.037-.139.035-.142.035-.143.034-.144.033-.147.032-.148.031-.15.03-.151.03-.153.029-.154.027-.156.027-.158.026-.159.025-.161.024-.162.023-.163.022-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.011-.178.01-.179.008-.179.008-.181.006-.182.005-.182.004-.184.003-.184.002h-.37l-.184-.002-.184-.003-.182-.004-.182-.005-.181-.006-.179-.008-.179-.008-.178-.01-.176-.011-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.022-.162-.023-.161-.024-.159-.025-.157-.026-.156-.027-.155-.027-.153-.029-.151-.03-.15-.03-.148-.031-.146-.032-.145-.033-.143-.034-.141-.035-.14-.035-.137-.037-.136-.037-.134-.038-.132-.038-.13-.04-.128-.04-.126-.041-.124-.042-.122-.042-.12-.044-.117-.043-.116-.045-.113-.045-.112-.046-.109-.047-.106-.047-.105-.048-.102-.049-.1-.049-.097-.05-.095-.05-.093-.052-.09-.051-.087-.052-.085-.053-.083-.054-.08-.054-.077-.054v4.127zm0-5.654v.011l.001.021.003.021.004.021.005.022.006.022.007.022.009.022.01.022.011.023.012.023.013.023.015.024.016.023.017.024.018.024.019.024.021.024.022.024.023.025.024.024.052.05.056.05.061.05.066.051.07.051.075.052.079.051.084.052.088.052.092.052.097.052.102.052.105.052.11.051.114.051.119.052.123.05.127.051.131.05.135.049.139.049.144.048.147.048.152.047.155.046.16.045.163.045.167.044.171.042.176.042.178.04.183.04.187.038.19.037.194.036.197.034.202.033.204.032.209.03.212.028.216.027.219.025.222.024.226.022.23.02.233.018.236.016.24.014.243.012.246.01.249.008.253.006.256.003.259.001.26-.001.257-.003.254-.006.25-.008.247-.01.244-.012.241-.015.237-.016.233-.018.231-.02.226-.022.224-.024.22-.025.216-.027.212-.029.21-.03.205-.032.202-.033.198-.035.194-.036.191-.037.187-.039.183-.039.179-.041.175-.042.172-.043.168-.044.163-.045.16-.045.155-.047.152-.047.148-.048.143-.048.139-.05.136-.049.131-.05.126-.051.123-.051.118-.051.114-.052.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.051.07-.052.065-.051.06-.05.056-.051.051-.049.023-.025.023-.024.021-.025.02-.024.019-.024.018-.024.017-.024.015-.023.014-.023.013-.024.012-.022.01-.023.01-.023.008-.022.006-.022.006-.022.004-.021.004-.022.001-.021.001-.021v-4.139l-.077.054-.08.054-.083.054-.085.052-.087.053-.09.051-.093.051-.095.051-.097.05-.1.049-.102.049-.105.048-.106.047-.109.047-.111.046-.114.045-.115.044-.118.044-.12.044-.122.042-.124.042-.126.041-.128.04-.13.039-.132.039-.134.038-.135.037-.138.036-.139.036-.142.035-.143.033-.144.033-.147.033-.148.031-.15.03-.151.03-.153.028-.154.028-.156.027-.158.026-.159.025-.161.024-.162.023-.163.022-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.011-.178.009-.179.009-.179.007-.181.007-.182.005-.182.004-.184.003-.184.002h-.37l-.184-.002-.184-.003-.182-.004-.182-.005-.181-.007-.179-.007-.179-.009-.178-.009-.176-.011-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.022-.162-.023-.161-.024-.159-.025-.157-.026-.156-.027-.155-.028-.153-.028-.151-.03-.15-.03-.148-.031-.146-.033-.145-.033-.143-.033-.141-.035-.14-.036-.137-.036-.136-.037-.134-.038-.132-.039-.13-.039-.128-.04-.126-.041-.124-.042-.122-.043-.12-.043-.117-.044-.116-.044-.113-.046-.112-.046-.109-.046-.106-.047-.105-.048-.102-.049-.1-.049-.097-.05-.095-.051-.093-.051-.09-.051-.087-.053-.085-.052-.083-.054-.08-.054-.077-.054v4.139zm0-5.666v.011l.001.02.003.022.004.021.005.022.006.021.007.022.009.023.01.022.011.023.012.023.013.023.015.023.016.024.017.024.018.023.019.024.021.025.022.024.023.024.024.025.052.05.056.05.061.05.066.051.07.051.075.052.079.051.084.052.088.052.092.052.097.052.102.052.105.051.11.052.114.051.119.051.123.051.127.05.131.05.135.05.139.049.144.048.147.048.152.047.155.046.16.045.163.045.167.043.171.043.176.042.178.04.183.04.187.038.19.037.194.036.197.034.202.033.204.032.209.03.212.028.216.027.219.025.222.024.226.021.23.02.233.018.236.017.24.014.243.012.246.01.249.008.253.006.256.003.259.001.26-.001.257-.003.254-.006.25-.008.247-.01.244-.013.241-.014.237-.016.233-.018.231-.02.226-.022.224-.024.22-.025.216-.027.212-.029.21-.03.205-.032.202-.033.198-.035.194-.036.191-.037.187-.039.183-.039.179-.041.175-.042.172-.043.168-.044.163-.045.16-.045.155-.047.152-.047.148-.048.143-.049.139-.049.136-.049.131-.051.126-.05.123-.051.118-.052.114-.051.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.052.07-.051.065-.051.06-.051.056-.05.051-.049.023-.025.023-.025.021-.024.02-.024.019-.024.018-.024.017-.024.015-.023.014-.024.013-.023.012-.023.01-.022.01-.023.008-.022.006-.022.006-.022.004-.022.004-.021.001-.021.001-.021v-4.153l-.077.054-.08.054-.083.053-.085.053-.087.053-.09.051-.093.051-.095.051-.097.05-.1.049-.102.048-.105.048-.106.048-.109.046-.111.046-.114.046-.115.044-.118.044-.12.043-.122.043-.124.042-.126.041-.128.04-.13.039-.132.039-.134.038-.135.037-.138.036-.139.036-.142.034-.143.034-.144.033-.147.032-.148.032-.15.03-.151.03-.153.028-.154.028-.156.027-.158.026-.159.024-.161.024-.162.023-.163.023-.165.021-.166.02-.167.019-.169.018-.169.017-.171.016-.173.015-.173.014-.175.013-.175.012-.177.01-.178.01-.179.009-.179.007-.181.006-.182.006-.182.004-.184.003-.184.001-.185.001-.185-.001-.184-.001-.184-.003-.182-.004-.182-.006-.181-.006-.179-.007-.179-.009-.178-.01-.176-.01-.176-.012-.175-.013-.173-.014-.172-.015-.171-.016-.17-.017-.169-.018-.167-.019-.166-.02-.165-.021-.163-.023-.162-.023-.161-.024-.159-.024-.157-.026-.156-.027-.155-.028-.153-.028-.151-.03-.15-.03-.148-.032-.146-.032-.145-.033-.143-.034-.141-.034-.14-.036-.137-.036-.136-.037-.134-.038-.132-.039-.13-.039-.128-.041-.126-.041-.124-.041-.122-.043-.12-.043-.117-.044-.116-.044-.113-.046-.112-.046-.109-.046-.106-.048-.105-.048-.102-.048-.1-.05-.097-.049-.095-.051-.093-.051-.09-.052-.087-.052-.085-.053-.083-.053-.08-.054-.077-.054v4.153zm8.74-8.179l-.257.004-.254.005-.25.008-.247.011-.244.012-.241.014-.237.016-.233.018-.231.021-.226.022-.224.023-.22.026-.216.027-.212.028-.21.031-.205.032-.202.033-.198.034-.194.036-.191.038-.187.038-.183.04-.179.041-.175.042-.172.043-.168.043-.163.045-.16.046-.155.046-.152.048-.148.048-.143.048-.139.049-.136.05-.131.05-.126.051-.123.051-.118.051-.114.052-.11.052-.106.052-.101.052-.096.052-.092.052-.088.052-.083.052-.079.052-.074.051-.07.052-.065.051-.06.05-.056.05-.051.05-.023.025-.023.024-.021.024-.02.025-.019.024-.018.024-.017.023-.015.024-.014.023-.013.023-.012.023-.01.023-.01.022-.008.022-.006.023-.006.021-.004.022-.004.021-.001.021-.001.021.001.021.001.021.004.021.004.022.006.021.006.023.008.022.01.022.01.023.012.023.013.023.014.023.015.024.017.023.018.024.019.024.02.025.021.024.023.024.023.025.051.05.056.05.06.05.065.051.07.052.074.051.079.052.083.052.088.052.092.052.096.052.101.052.106.052.11.052.114.052.118.051.123.051.126.051.131.05.136.05.139.049.143.048.148.048.152.048.155.046.16.046.163.045.168.043.172.043.175.042.179.041.183.04.187.038.191.038.194.036.198.034.202.033.205.032.21.031.212.028.216.027.22.026.224.023.226.022.231.021.233.018.237.016.241.014.244.012.247.011.25.008.254.005.257.004.26.001.26-.001.257-.004.254-.005.25-.008.247-.011.244-.012.241-.014.237-.016.233-.018.231-.021.226-.022.224-.023.22-.026.216-.027.212-.028.21-.031.205-.032.202-.033.198-.034.194-.036.191-.038.187-.038.183-.04.179-.041.175-.042.172-.043.168-.043.163-.045.16-.046.155-.046.152-.048.148-.048.143-.048.139-.049.136-.05.131-.05.126-.051.123-.051.118-.051.114-.052.11-.052.106-.052.101-.052.096-.052.092-.052.088-.052.083-.052.079-.052.074-.051.07-.052.065-.051.06-.05.056-.05.051-.05.023-.025.023-.024.021-.024.02-.025.019-.024.018-.024.017-.023.015-.024.014-.023.013-.023.012-.023.01-.023.01-.022.008-.022.006-.023.006-.021.004-.022.004-.021.001-.021.001-.021-.001-.021-.001-.021-.004-.021-.004-.022-.006-.021-.006-.023-.008-.022-.01-.022-.01-.023-.012-.023-.013-.023-.014-.023-.015-.024-.017-.023-.018-.024-.019-.024-.02-.025-.021-.024-.023-.024-.023-.025-.051-.05-.056-.05-.06-.05-.065-.051-.07-.052-.074-.051-.079-.052-.083-.052-.088-.052-.092-.052-.096-.052-.101-.052-.106-.052-.11-.052-.114-.052-.118-.051-.123-.051-.126-.051-.131-.05-.136-.05-.139-.049-.143-.048-.148-.048-.152-.048-.155-.046-.16-.046-.163-.045-.168-.043-.172-.043-.175-.042-.179-.041-.183-.04-.187-.038-.191-.038-.194-.036-.198-.034-.202-.033-.205-.032-.21-.031-.212-.028-.216-.027-.22-.026-.224-.023-.226-.022-.231-.021-.233-.018-.237-.016-.241-.014-.244-.012-.247-.011-.25-.008-.254-.005-.257-.004-.26-.001-.26.001z" transform="scale(.5)"></path></symbol></defs><defs><symbol height="24" width="24" id="clock"><path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.848 12.459c.202.038.202.333.001.372-1.907.361-6.045 1.111-6.547 1.111-.719 0-1.301-.582-1.301-1.301 0-.512.77-5.447 1.125-7.445.034-.192.312-.181.343.014l.985 6.238 5.394 1.011z" transform="scale(.5)"></path></symbol></defs><defs><marker orient="auto" markerHeight="12" markerWidth="12" markerUnits="userSpaceOnUse" refY="5" refX="7.9" id="arrowhead"><path d="M 0 0 L 10 5 L 0 10 z"></path></marker></defs><defs><marker refY="4.5" refX="4" orient="auto" markerHeight="8" markerWidth="15" id="crosshead"><path style="stroke-dasharray: 0, 0;" d="M 1,2 L 6,7 M 6,2 L 1,7" stroke-width="1pt" stroke="#000000" fill="none"></path></marker></defs><defs><marker orient="auto" markerHeight="28" markerWidth="20" refY="7" refX="15.5" id="filled-head"><path d="M 18,7 L9,13 L14,7 L9,1 Z"></path></marker></defs><defs><marker orient="auto" markerHeight="40" markerWidth="60" refY="15" refX="15" id="sequencenumber"><circle r="6" cy="15" cx="15"></circle></marker></defs><g><rect class="note" ry="0" rx="0" height="77" width="364" stroke="#666" fill="#EDF2AE" y="275" x="304"></rect><text style="font-size: 16px; font-weight: 400;" dy="1em" class="noteText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="280" x="486"><tspan x="486">1. delete any X-User-* headers the client sent</tspan></text><text style="font-size: 16px; font-weight: 400;" dy="1em" class="noteText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="299" x="486"><tspan x="486">2. verify JWT signature + expiry</tspan></text><text style="font-size: 16px; font-weight: 400;" dy="1em" class="noteText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="318" x="486"><tspan x="486">3. check role allowed for this route</tspan></text></g><g><rect class="note" ry="0" rx="0" height="39" width="274" stroke="#666" fill="#EDF2AE" y="412" x="781"></rect><text style="font-size: 16px; font-weight: 400;" dy="1em" class="noteText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="417" x="918"><tspan x="918">re-checks role (defence in depth)</tspan></text></g><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="80" x="279">POST /login {email, password}</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="115" x2="482" y1="115" x1="76"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="130" x="601">forward</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="165" x2="714" y1="165" x1="487"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="180" x="398">JWT token (signed, valid 8h)</text><line style="stroke-dasharray: 3, 3; fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine1" y2="215" x2="79" y1="215" x1="717"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="230" x="279">GET /api/rooms  (Authorization: Bearer token)</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="265" x2="482" y1="265" x1="76"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="367" x="701">forward + X-User-Email / X-User-Role</text><line style="fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine0" y2="402" x2="914" y1="402" x1="487"></line><text style="font-size: 16px; font-weight: 400;" dy="1em" class="messageText" alignment-baseline="middle" dominant-baseline="middle" text-anchor="middle" y="466" x="498">rooms JSON</text><line style="stroke-dasharray: 3, 3; fill: none;" marker-end="url(#arrowhead)" stroke="none" stroke-width="2" class="messageLine1" y2="501" x2="79" y1="501" x1="917"></line></svg></div>
+  </div>
+
+  <h3>Which service owns which data</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Collection</th><th>Written by</th><th>Also read by</th></tr></thead>
+    <tbody>
+      <tr><td class="m">users</td><td>Registration (Student/Teacher update own name, phone, password)</td><td>Authentication, Student, Teacher</td></tr>
+      <tr><td class="m">access_permissions</td><td>Permission</td><td>Access Log, Student, Teacher</td></tr>
+      <tr><td class="m">rooms</td><td>Room (Emergency sets the lockdown flag)</td><td>Access Log, Student, Teacher</td></tr>
+      <tr><td class="m">access_logs</td><td>Access Log</td><td>none</td></tr>
+      <tr><td class="m">emergency_alerts</td><td>Emergency</td><td>none</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>The <code>shared/</code> folder (everyone should know this)</h3>
+  <p>Code every service needs lives in one place instead of being copied into each service. Each Docker image is built from the repository root so it can include this folder.</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>File</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td class="m">db.js</td><td>Connects to MongoDB and keeps retrying every 5 s until it works.</td></tr>
+      <tr><td class="m">service.js</td><td><code>/health</code> and <code>/livez</code> probes, reading the user from gateway headers, <code>requireRole()</code>, ID generator, safe regex helpers.</td></tr>
+      <tr><td class="m">models.js</td><td>The User and AccessPermission schemas, defined once.</td></tr>
+      <tr><td class="m">access-rules.js</td><td>"Is this permission valid right now?" (dates, weekday, hours). Used by Permission and Access Log.</td></tr>
+      <tr><td class="m">portal.js</td><td>The profile/schedule routes used by both Student and Teacher.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============================ SOKHADOM ============================ -->
+<section id="sokhadom" aria-labelledby="sok-h">
+  <div class="owner-head sok"><h2 id="sok-h">Sokhadom</h2><span class="eyebrow">API Gateway · Permission · Emergency Alert · Web dashboard UI</span></div>
+
+  <article class="svc">
+    <div class="svc-head"><h3>API Gateway</h3><div class="meta"><span class="tag sok">port 4000</span><span class="tag">APIGateway_Microservice/api-gateway.js, load-balancer.js</span></div></div>
+    <p class="oneliner">The app's front door. Every request reaches it through the Kubernetes Ingress (browser → Ingress → gateway), and it checks the token and role, forwards to the right service, load-balances door swipes, and serves the web dashboard.</p>
+    <div class="split">
+      <div><h4>What it does to each request</h4><ol>
+        <li><b>Strips</b> any <code>X-User-*</code> headers the client sent.</li>
+        <li>Logs the request (to the console and the shared log volume). Health probes are skipped.</li>
+        <li>Verifies the JWT (<code>HS256</code>, signature + expiry). Missing token: 401, bad token: 403.</li>
+        <li>Checks the role against a rule table for that route. Wrong role: 403.</li>
+        <li>Adds trusted headers <code>X-User-Id/Email/Role/Name/Department</code> and proxies with <code>http-proxy</code> (keep-alive connections).</li>
+      </ol></div>
+      <div><h4>Route rules (summary)</h4><ul>
+        <li><code>/reg</code>, <code>/login</code>: public</li>
+        <li><code>/api/rooms</code>: read all roles. Enrollment request: student. Approve/reject/remove student and lock toggle: admin + faculty. Every other write: admin.</li>
+        <li><code>/api/permissions</code>, <code>/api/admin</code>: admin</li>
+        <li><code>/api/students</code>: student · <code>/api/teachers</code>: faculty</li>
+        <li><code>/api/logs</code>: swipe and own history for all roles, the rest admin</li>
+        <li><code>/api/alerts</code>: report and active for all roles, the rest admin</li>
+      </ul></div>
+    </div>
+    <h4>Round-robin load balancer (load-balancer.js)</h4>
+    <p>Every 5 seconds the gateway asks Kubernetes DNS for <code>access-log-headless</code>. That's a <b>headless Service</b>, so DNS returns one IP per <i>ready</i> Access Log pod. The gateway keeps that list and sends swipe #1 to pod A, #2 to pod B, #3 to pod A… The counter keeps going even when the list changes. Each pod returns its name in <code>X-Served-By-Instance</code>, so the stats and the dashboard show real pod names. If DNS fails, the last known list is kept. Outside Kubernetes it uses a fixed URL list instead.</p>
+    <div class="changed"><h4>Changed for the final</h4><ul>
+      <li>Fixed leftover merge-conflict lines that stopped the gateway from starting.</li>
+      <li>Security fix: header stripping. Before, anyone could send <code>X-User-Role: admin</code> on public routes.</li>
+      <li>No hard-coded fallback JWT secret: it refuses to start without a 32+ character secret.</li>
+      <li>Midterm: two hard-coded instances on ports 5005/5015. Final: automatic pod discovery, so scaling and autoscaling just work.</li>
+      <li>Long if-chains became an ordered rule table (<code>routeByRules</code>). Gateway rules now match what each service allows.</li>
+    </ul></div>
+    <div class="qa">
+      <h4>Likely questions</h4>
+      <div class="q"><b>Kubernetes Services already load-balance. Why build your own?</b><p>A normal Service spreads <i>connections</i> roughly at random. Ours is strict round-robin per request and records per-pod counts we can show live. The headless Service gives us the pod list, so we keep the Kubernetes benefits (only ready pods, automatic scaling) and still control the algorithm.</p></div>
+      <div class="q"><b>What happens if an Access Log pod crashes mid-demo?</b><p>Its readiness check fails, so it drops out of DNS. Within about 5 seconds the gateway stops sending to it. Meanwhile the Deployment starts a replacement, which joins the rotation once ready.</p></div>
+      <div class="q"><b>Why should services trust the X-User headers?</b><p>Three layers. The gateway deletes any copies a client sends. The services have no outside-facing Service. And <b>NetworkPolicies</b> block every pod except the gateway from reaching them, so even a pod inside the cluster can't call a service with forged headers. We tested it: an unlabeled pod times out, the gateway gets through.</p></div>
+      <div class="q honest"><b>What would production add?</b><p>Mutual TLS between pods (a service mesh like Istio or Linkerd), so traffic is encrypted and each side proves its identity cryptographically, not just by network rules.</p></div>
+    </div>
+  </article>
+
+  <article class="svc">
+    <div class="svc-head"><h3>Web dashboard (UI)</h3><div class="meta"><span class="tag sok">served by the gateway at /</span><span class="tag">APIGateway_Microservice/public/index.html</span></div></div>
+    <p class="oneliner">One web page, served by the API Gateway, laid out like the university's Canvas: a dark blue side menu, big page titles, and one page per task. Every role uses it to log in, manage rooms, swipe badges, watch the load balancer, and trigger lockdowns.</p>
+    <div class="split">
+      <div><h4>What's on it</h4><ul>
+        <li><b>Side menu (like Canvas)</b>: Account, Dashboard, Badge reader, Rooms, Classes, plus Users and Checks for admins or Profile for students and faculty. Each item opens its own page, so nothing is one long scroll. The Dashboard has Canvas-style course cards linking to each page.</li>
+        <li><b>Searchable dropdowns</b> for every choice field (room, who to swipe as, classroom, instructor email, student email, role filter): click to see all stored values, or type to filter.</li>
+        <li><b>Login and sign-up screens</b>, plus quick buttons for the three demo accounts. Sign-up only offers Student or Faculty.</li>
+        <li><b>Room inventory</b> with lock/unlock buttons. Admins see admin actions, faculty see lock controls for their own rooms, students see read-only clearance info.</li>
+        <li><b>Classroom portals</b>: students request enrollment, faculty approve/reject, admins assign teachers and enroll students directly.</li>
+        <li><b>Badge reader</b>: <i>Swipe badge</i> and <i>Swipe 4 times</i>, a reader that shows Granted or Denied with the reason, and the response headers. Admins can pick <b>who to swipe as</b> (any registered person) to demo a student or teacher being let in or denied; students and faculty always swipe as themselves.</li>
+        <li><b>Live load-balancer panel</b>: one card per Access Log pod, named after the real pod, with request counts and percentages. The pod that served the last swipe is highlighted.</li>
+        <li><b>Emergency banner and lockdown buttons</b> (lockdown buttons admin only).</li>
+        <li><b>Profile portal</b>: student or teacher profile and room schedule, from the Student/Teacher services.</li>
+        <li><b>Admin user directory</b> and a built-in <b>Run system checks</b> button (admin only).</li>
+      </ul></div>
+      <div><h4>How it works</h4><ol>
+        <li>On login it stores the JWT in <code>sessionStorage</code> (cleared when the tab closes).</li>
+        <li>Every API call sends <code>Authorization: Bearer &lt;token&gt;</code> to the gateway. The page talks to nothing else.</li>
+        <li><code>applyRolePermissions(role)</code> shows or hides panels for admin, faculty or student, and the menu only lists pages that role may open (typing an admin page's URL as a student lands on Dashboard).</li>
+        <li>Pages are switched in the browser by the URL fragment (<code>#rooms</code>, <code>#classes</code>…), so there's no page reload and the back button works.</li>
+        <li>The searchable dropdowns wrap the original <code>&lt;select&gt;</code>, which stays the source of truth, so all existing code that reads <code>.value</code> works unchanged.</li>
+        <li>Load-balancer cards come from the <code>X-Served-By-Instance</code> header on each swipe; for admins, also from <code>/api/gateway/load-balancer-stats</code>.</li>
+        <li>Data from the server is passed through <code>escapeHtml()</code> before it's shown, so a room or user name can't inject HTML or scripts.</li>
+      </ol></div>
+    </div>
+    <div class="changed"><h4>Changed for the final</h4><ul>
+      <li>Redesigned to match the university's Canvas: side menu, separate pages per role, Canvas-style dashboard cards, Lato font.</li>
+      <li>Every choice field became a searchable dropdown; "Swiping as" became a real picker for admins.</li>
+      <li>The load-balancer panel used to have two fixed cards (Instance-1 and Instance-2). Now it draws one card per real pod, so scaling to 3 pods shows 3 cards.</li>
+      <li>The "Admin" option was removed from public sign-up, and the demo auto-register no longer creates admins (admin comes from the Kubernetes Secret).</li>
+      <li>Removed an unused <code>switchUserRole</code> function that registered admin accounts publicly.</li>
+      <li>The built-in test runner now reports real PASS/FAIL (it used to always say "All Checks Passed") and checks that public admin sign-up is blocked.</li>
+    </ul></div>
+    <div class="qa">
+      <h4>Likely questions</h4>
+      <div class="q"><b>If the UI hides admin buttons, is that the security?</b><p>No. Hiding buttons is only for convenience. The real checks happen on the server: the gateway and each service verify the token and role on every request. A student who calls an admin API directly with Postman still gets 403.</p></div>
+      <div class="q"><b>Why does the gateway serve the UI instead of a separate web server?</b><p>The page and the API share one address (same origin), so there are no cross-origin problems and only one Service is exposed. For a bigger app you'd put the UI in its own container or a CDN.</p></div>
+      <div class="q"><b>How does the UI know which pod answered?</b><p>Each Access Log pod adds its own pod name in the <code>X-Served-By-Instance</code> response header (Kubernetes injects the name as <code>POD_NAME</code>). The page reads that header after every swipe.</p></div>
+      <div class="q honest"><b>Why sessionStorage and not a cookie?</b><p>It keeps the token per tab and simple for a demo. A production app would usually use an HttpOnly cookie, so page scripts can't read the token if there's ever an XSS bug.</p></div>
+    </div>
+  </article>
+
+
+  <article class="svc">
+    <div class="svc-head"><h3>Permission service</h3><div class="meta"><span class="tag sok">port 5004</span><span class="tag">Permission_Microservice/index.js</span></div></div>
+    <p class="oneliner">Admins grant a user access to a specific room on specific weekdays and hours, for a limited time. Every endpoint is admin-only.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Method</th><th>Path</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td class="m">POST</td><td class="m">/api/permissions/grant</td><td>Grant access, or update the existing grant for the same email + room. Defaults: Mon–Fri, 08:00–20:00, valid 1 year.</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/permissions</td><td>List all grants (filter by role, room, active).</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/permissions/user/:id</td><td>Active grants for one user (ID or email).</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/permissions/room/:id</td><td>Who is allowed into one room.</td></tr>
+        <tr><td class="m">POST</td><td class="m">/api/permissions/check</td><td>Simulate the door decision for any user, room and time (<code>timestamp</code> lets you test e.g. Sunday 23:00).</td></tr>
+        <tr><td class="m">DELETE</td><td class="m">/api/permissions/:id</td><td>Revoke a grant.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="split">
+      <div><h4>Validation on grant</h4><ul>
+        <li><code>allowedDays</code> must be real weekday names.</li>
+        <li>Times must be <code>HH:mm</code> and different. Start later than end means overnight (e.g. 22:00–02:00).</li>
+        <li><code>validUntil</code> must be in the future.</li>
+        <li><code>grantedBy</code> is the admin's email from the token (can't be faked).</li>
+      </ul></div>
+      <div><h4>The time-window rule (shared/access-rules.js)</h4><ol>
+        <li>Before <code>validFrom</code> → NOT_YET_VALID</li>
+        <li>After <code>validUntil</code> → PERMISSION_EXPIRED</li>
+        <li>Today not in <code>allowedDays</code> → OUTSIDE_ALLOWED_DAYS</li>
+        <li>Time outside start–end → OUTSIDE_SCHEDULED_HOURS (overnight windows wrap past midnight)</li>
+        <li>Otherwise → AUTHORIZED</li>
+      </ol></div>
+    </div>
+    <div class="changed"><h4>Changed for the final</h4><ul>
+      <li>The time-window logic was duplicated in Permission and Access Log. Now both call one shared function, so they can never disagree.</li>
+      <li>The gateway now matches the service: <code>/check</code> is admin-only on both (before, the gateway let students through but the service rejected them).</li>
+      <li>Two database indexes (<code>userId+roomId</code>, <code>userEmail+roomNumber</code>) keep door lookups fast.</li>
+      <li>Overnight windows are now supported (they used to be rejected).</li>
+    </ul></div>
+    <div class="qa">
+      <h4>Likely questions</h4>
+      <div class="q"><b>Where is a permission actually enforced?</b><p>At the door: the Access Log service reads <code>access_permissions</code> on every swipe and applies the same shared rule. Permission is where grants are managed. Access Log is where they're used.</p></div>
+      <div class="q"><b>Why compare times as strings?</b><p>Times are zero-padded <code>HH:mm</code>, so text order equals time order ("08:05" &lt; "20:00"). It's simple and correct for same-day windows.</p></div>
+      <div class="q"><b>Can a permission cover a night shift, like 22:00–02:00?</b><p>Yes. If start is later than end, it's treated as an overnight window. The after-midnight part counts as the previous day, so "Friday 22:00–02:00" lets you in at Saturday 01:30 but not Saturday 03:00. Tests 8.1–8.4 prove it.</p></div>
+      <div class="q honest"><b>Any limitation?</b><p>Times use the server's clock and time zone. A multi-campus system would store a time zone per building.</p></div>
+    </div>
+  </article>
+
+  <article class="svc">
+    <div class="svc-head"><h3>Emergency Alert service</h3><div class="meta"><span class="tag sok">port 5006</span><span class="tag">EmergencyAlert_Microservice/index.js</span></div></div>
+    <p class="oneliner">Admins lock down the whole campus or one building, and anyone can report a security incident.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Method</th><th>Path</th><th>Who</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td class="m">POST</td><td class="m">/api/alerts/lockdown</td><td class="who">admin</td><td>Create a CAMPUS_LOCKDOWN (building ALL) or BUILDING_LOCKDOWN alert, then set <code>isEmergencyLocked = true</code> on every matching room.</td></tr>
+        <tr><td class="m">POST</td><td class="m">/api/alerts/lift</td><td class="who">admin</td><td>Resolve every active lockdown alert for that building (or all of them for ALL) and set <code>isEmergencyLocked = false</code> on those rooms. Lifting by <code>alertId</code> uses that alert's building.</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/alerts/active</td><td class="who">everyone</td><td>Is there an emergency right now? Drives the red banner in the UI.</td></tr>
+        <tr><td class="m">POST</td><td class="m">/api/alerts/report</td><td class="who">everyone</td><td>Report an incident (suspicious activity, door tamper, fire hazard…).</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/alerts/history</td><td class="who">admin</td><td>All alerts, newest first (filter by status, severity; max 500).</td></tr>
+        <tr><td class="m">DELETE</td><td class="m">/api/alerts/:id</td><td class="who">admin</td><td>Delete an alert.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="split">
+      <div><h4>How lockdown reaches the doors</h4><p>Emergency writes the <code>isEmergencyLocked</code> flag straight onto the room documents. On every swipe, Access Log checks that flag <b>first</b>, before anything else, so even admins and enrolled students are denied with <code>CAMPUS_EMERGENCY_LOCKDOWN</code>.</p></div>
+      <div><h4>Alert fields</h4><p><code>alertType</code>, <code>building</code>, <code>severity</code> (LOW → CRITICAL), <code>status</code> (ACTIVE / RESOLVED), <code>triggeredBy</code>, <code>resolvedBy</code>, timestamps.</p></div>
+    </div>
+    <div class="changed"><h4>Changed for the final</h4><ul>
+      <li><code>triggeredBy</code> / <code>resolvedBy</code> now come from the logged-in user's token. Before, the request body could claim anyone.</li>
+      <li>A student report can't create a lockdown-type alert. It's converted to SUSPICIOUS_ACTIVITY.</li>
+      <li>The building name is escaped before it's used in a database search (prevents regex injection).</li>
+      <li>Lift used to resolve only one alert while unlocking every room, so other lockdowns still showed ACTIVE. Now it resolves all the lockdowns it covers, and incident reports stay open.</li>
+      <li>Reopening one building during a campus-wide lockdown is refused (409). Lift ALL first.</li>
+      <li>Admin-only routes are checked inside the service as well as at the gateway.</li>
+    </ul></div>
+    <div class="qa">
+      <h4>Likely questions</h4>
+      <div class="q"><b>Why does Emergency update the rooms collection directly instead of calling the Room service?</b><p>Speed and reliability in an emergency: one database update locks every room even if the Room service is down. The trade-off is that two services write to <code>rooms</code>. A stricter design would publish a "lockdown" event that Room handles.</p></div>
+      <div class="q"><b>Can a faculty member trigger a lockdown?</b><p>No. Before the fix they could, through a Room-service route the gateway allowed for faculty. Now that route is admin-only, and <code>run_tests.js</code> check 6.2 proves it returns 403.</p></div>
+      <div class="q"><b>What if there are several lockdowns at once?</b><p>Lifting ALL resolves every one of them. Lifting one building resolves only that building's lockdowns, and it's refused while a campus-wide lockdown is active, so you can't accidentally reopen part of a locked campus. Tests 9.1–9.3 cover this.</p></div>
+    </div>
+  </article>
+</section>
+
+<!-- ============================ BOUKHEANG ============================ -->
+<section id="boukheang" aria-labelledby="bou-h">
+  <div class="owner-head bou"><h2 id="bou-h">Boukheang</h2><span class="eyebrow">Registration · Authentication · Access Log</span></div>
+
+  <article class="svc">
+    <div class="svc-head"><h3>Registration service</h3><div class="meta"><span class="tag bou">port 5001</span><span class="tag">Registration_Microservice/registration.js</span></div></div>
+    <p class="oneliner">Creates user accounts and gives admins user-management tools. It also creates the first admin account when the system starts.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Method</th><th>Path (through gateway)</th><th>Who</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td class="m">POST</td><td class="m">/reg, /api/auth/register</td><td class="who">anyone</td><td>Sign up as student or faculty. Admin role only if the caller sends an admin token.</td></tr>
+        <tr><td class="m">POST</td><td class="m">/api/admin/api/auth/batch-register</td><td class="who">admin</td><td>Import up to 500 users at once. Each row reports CREATED / SKIPPED / FAILED.</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/admin/users</td><td class="who">admin</td><td>List users (filter by role, department). Passwords never returned.</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/admin/users/:id, /users/card/:cardId</td><td class="who">admin</td><td>Look up one user by ID or by badge card ID.</td></tr>
+        <tr><td class="m">DELETE</td><td class="m">/api/admin/users/:email</td><td class="who">admin</td><td>Delete a user (an admin can't delete themselves).</td></tr>
+      </tbody>
+    </table></div>
+    <div class="split">
+      <div><h4>How sign-up works</h4><ol>
+        <li>Checks name, email format, password is 8+ characters, and role is valid.</li>
+        <li>Blocks <code>admin</code> unless the gateway says the caller is an admin (403 otherwise).</li>
+        <li>Returns 409 if the email already exists.</li>
+        <li>Hashes the password with <b>bcrypt</b> (10 rounds), so the plain password is never stored.</li>
+        <li>Generates <code>USR-…</code> ID and a badge <code>CARD-######</code>, then saves to <code>users</code>.</li>
+      </ol></div>
+      <div><h4>Bootstrap admin</h4><p>When the service connects to MongoDB, it reads <code>ADMIN_EMAIL</code> / <code>ADMIN_PASSWORD</code> from the Kubernetes Secret and creates that admin if it doesn't exist. If two replicas try at once, MongoDB's unique email index rejects the duplicate (error 11000) and the code ignores it.</p>
+      <h4>Kubernetes</h4><p>Deployment + ClusterIP Service. It's the only service that receives the <code>ADMIN_*</code> secret keys.</p></div>
+    </div>
+    <div class="changed"><h4>Changed for the final</h4><ul>
+      <li>Security fix: before, anyone could register as <b>admin</b> from the public sign-up form. Now only student/faculty can.</li>
+      <li>The admin routes now check the role inside the service too, not just at the gateway.</li>
+      <li>The batch import's shared default password <code>CampusDefaultPass123!</code> was removed; each user needs their own.</li>
+    </ul></div>
+    <div class="qa">
+      <h4>Likely questions</h4>
+      <div class="q"><b>Why hash passwords with bcrypt instead of encrypting them?</b><p>Hashing is one-way: even we can't recover the password. bcrypt is deliberately slow and adds a random salt, so two identical passwords give different hashes and brute-forcing is expensive.</p></div>
+      <div class="q"><b>How does a new admin get created then?</b><p>An existing admin calls <code>/reg</code> with their token and <code>role: admin</code>. The very first admin comes from the Kubernetes Secret at startup.</p></div>
+      <div class="q"><b>How does Registration know who is calling if the route is public?</b><p>The gateway uses "optional auth" on <code>/reg</code>: if a valid token is present it forwards the user's role, otherwise the caller is treated as anonymous.</p></div>
+      <div class="q"><b>Why is registration separate from authentication?</b><p>Different jobs, different load: sign-ups are rare, logins are constant. Splitting them lets each scale and change independently. That's the single-responsibility idea behind microservices.</p></div>
+    </div>
+  </article>
+
+  <article class="svc">
+    <div class="svc-head"><h3>Authentication service</h3><div class="meta"><span class="tag bou">port 5002</span><span class="tag">Authentication_Microservice/authentication-service.js</span></div></div>
+    <p class="oneliner">Checks email + password and issues a signed JWT that proves who you are for the next 8 hours.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Method</th><th>Path</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td class="m">POST</td><td class="m">/login, /api/auth/login</td><td>Email + password (optional role) → <code>token</code> + user info. Wrong details: 401. Suspended account: 403.</td></tr>
+        <tr><td class="m">POST</td><td class="m">/api/auth/verify</td><td>Checks a token and returns its decoded contents.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="split">
+      <div><h4>What's inside the token</h4><p><code>id, email, name, role, department, cardId</code>, plus issue time and expiry. Signed with <code>JWT_SECRET</code> using HMAC-SHA256. Anyone can <i>read</i> a JWT, but nobody can <i>change</i> it without the secret.</p></div>
+      <div><h4>Security details</h4><ul>
+        <li>Same error message for "no such email" and "wrong password", so attackers can't discover accounts.</li>
+        <li>An unknown email still runs a bcrypt compare against a dummy hash, so response time doesn't reveal whether the email exists.</li>
+        <li>The <code>JWT_SECRET</code> exists only in this service and the gateway (least privilege).</li>
+      </ul></div>
+    </div>
+    <div class="changed"><h4>Changed for the final</h4><ul>
+      <li>Removed the hard-coded fallback secret. The deploy script generates a random 48-character key per cluster.</li>
+      <li>Token lifetime is 8 h (configurable with <code>JWT_EXPIRES_IN</code>). It used to be 24 h.</li>
+      <li>Added the timing-attack fix described above.</li>
+    </ul></div>
+    <div class="qa">
+      <h4>Likely questions</h4>
+      <div class="q"><b>Why JWT instead of sessions?</b><p>It's stateless: the gateway verifies the signature itself, without a session store or a call to Authentication on every request. That's why any replica can handle any request.</p></div>
+      <div class="q"><b>How do you log out or revoke a token?</b><p>The UI deletes it from the browser. Server-side revocation would need a blocklist or short tokens plus refresh tokens. That's a known JWT trade-off, so we keep tokens to 8 h.</p></div>
+      <div class="q"><b>Where is the secret stored?</b><p>In a Kubernetes Secret, injected as an environment variable. It's never in the code or the image.</p></div>
+    </div>
+  </article>
+
+  <article class="svc">
+    <div class="svc-head"><h3>Access Log service (door swipes)</h3><div class="meta"><span class="tag bou">port 5005 · 2–5 pods</span><span class="tag">AccessLog_Microservice/index.js</span></div></div>
+    <p class="oneliner">Decides whether a door opens when a badge is swiped, and writes every decision to an audit log. This is the busiest service, so it's the one that scales.</p>
+    <h4>The door decision, in order (first match wins)</h4>
+    <ol class="ladder">
+      <li><span>Room is under emergency lockdown</span><span class="res d">DENIED · CAMPUS_EMERGENCY_LOCKDOWN</span></li>
+      <li><span>Room is physically locked</span><span class="res d">DENIED · ROOM_PHYSICALLY_LOCKED</span></li>
+      <li><span>User is admin</span><span class="res g">GRANTED</span></li>
+      <li><span>Faculty assigned to this classroom</span><span class="res g">GRANTED</span></li>
+      <li><span>Student enrolled in this classroom</span><span class="res g">GRANTED</span></li>
+      <li><span>Has an access permission (checks days, hours, dates)</span><span class="res g">GRANTED / DENIED reason</span></li>
+      <li><span>GENERAL room with no instructor assigned (open space)</span><span class="res g">GRANTED</span></li>
+      <li><span>Anything else</span><span class="res d">DENIED · NOT_ENROLLED / NOT_ASSIGNED</span></li>
+    </ol>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Method</th><th>Path</th><th>Who</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td class="m">POST</td><td class="m">/api/logs/swipe</td><td class="who">all</td><td>Swipe a badge at a room. Users always swipe as themselves. Admins may simulate another user.</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/logs/user/:id</td><td class="who">all</td><td>Last 50 swipes for a user. Non-admins can only read their own.</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/logs</td><td class="who">admin</td><td>Audit log with filters (status, room, user, role; max 1000).</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/logs/stats/summary</td><td class="who">admin</td><td>Totals, approval rate, denial reasons, top 5 rooms (5 queries run in parallel).</td></tr>
+        <tr><td class="m">DELETE</td><td class="m">/api/logs/cleanup</td><td class="who">admin</td><td>Delete logs older than N days (default 90).</td></tr>
+      </tbody>
+    </table></div>
+    <div class="changed"><h4>Changed for the final</h4><ul>
+      <li>Restored classroom access (steps 4, 5 and 7). A merge had deleted it, so enrolled students were being denied.</li>
+      <li>Security fix: the user's identity comes from the token. Before, a student could send <code>userRole: "admin"</code> in the body and open any door.</li>
+      <li>Students can no longer read other people's swipe history.</li>
+      <li>One Deployment with replicas, an autoscaler (HPA) and a PodDisruptionBudget, instead of two separate copies. The instance name is the pod name, injected by Kubernetes.</li>
+    </ul></div>
+    <div class="qa">
+      <h4>Likely questions</h4>
+      <div class="q"><b>Why is this the service that scales?</b><p>Every door swipe on campus hits it, so it gets the most traffic. It's stateless (all data is in MongoDB), so extra pods can run side by side safely.</p></div>
+      <div class="q"><b>How does autoscaling work?</b><p>The HPA watches average CPU. Above 60% it adds pods (max 5), and when load drops it removes them (min 2). It needs metrics-server, which the deploy script installs with <code>-InstallMetricsServer</code>.</p></div>
+      <div class="q"><b>What's the PodDisruptionBudget for?</b><p>It keeps at least 1 Access Log pod running during planned maintenance (like draining a node), so doors never stop working.</p></div>
+    </div>
+  </article>
+</section>
+
+<!-- ============================ PANHAVAN ============================ -->
+<section id="panhavan" aria-labelledby="pan-h">
+  <div class="owner-head pan"><h2 id="pan-h">Panhavan</h2><span class="eyebrow">Room · Student · Teacher</span></div>
+
+  <article class="svc">
+    <div class="svc-head"><h3>Room service</h3><div class="meta"><span class="tag pan">port 5003</span><span class="tag">Room_Microservice/index.js</span></div></div>
+    <p class="oneliner">Manages rooms (classrooms, labs, offices), their locks, and who teaches or studies in each classroom.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Method</th><th>Path</th><th>Who</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td class="m">GET</td><td class="m">/api/rooms, /api/rooms/:id</td><td class="who">all</td><td>List rooms (filter by building, type, clearance, lock, course) or get one.</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/rooms/:id/roster</td><td class="who">all</td><td>Teachers, enrolled students, pending requests, seats left.</td></tr>
+        <tr><td class="m">POST / PUT / DELETE</td><td class="m">/api/rooms(/:id)</td><td class="who">admin</td><td>Create, edit (only allowed fields), delete a room.</td></tr>
+        <tr><td class="m">POST</td><td class="m">/:id/assign-faculty, /remove-faculty</td><td class="who">admin</td><td>Assign or remove a teacher (optionally set course code/title).</td></tr>
+        <tr><td class="m">POST</td><td class="m">/:id/request-enrollment</td><td class="who">student</td><td>Ask to join a class (goes to pending; checks capacity, no duplicates).</td></tr>
+        <tr><td class="m">POST</td><td class="m">/:id/approve-enrollment, /reject-enrollment</td><td class="who">admin, assigned faculty</td><td>Accept or decline a pending student.</td></tr>
+        <tr><td class="m">POST</td><td class="m">/:id/enroll-student</td><td class="who">admin</td><td>Enroll directly, skipping the request (capacity still enforced).</td></tr>
+        <tr><td class="m">POST</td><td class="m">/:id/remove-student</td><td class="who">admin, assigned faculty</td><td>Drop a student from the class.</td></tr>
+        <tr><td class="m">PATCH</td><td class="m">/:id/toggle-lock</td><td class="who">admin, assigned faculty</td><td>Lock or unlock the room's door.</td></tr>
+        <tr><td class="m">PATCH</td><td class="m">/emergency/set-lockdown</td><td class="who">admin</td><td>Batch emergency lock/unlock by building.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="split">
+      <div><h4>Enrollment workflow</h4>
+<div class="diagram" style="padding:10px">
+<div class="diagram-svg" role="img"><svg aria-roledescription="flowchart-v2" role="graphics-document document" viewBox="-8 -8 934.46875 201.64114379882812" style="max-width:100%;height:auto;" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="100%" id="mermaid-1795017890549"><style>#mermaid-1795017890549{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#mermaid-1795017890549 .error-icon{fill:#552222;}#mermaid-1795017890549 .error-text{fill:#552222;stroke:#552222;}#mermaid-1795017890549 .edge-thickness-normal{stroke-width:2px;}#mermaid-1795017890549 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-1795017890549 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-1795017890549 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-1795017890549 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-1795017890549 .marker{fill:#333333;stroke:#333333;}#mermaid-1795017890549 .marker.cross{stroke:#333333;}#mermaid-1795017890549 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-1795017890549 .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#333;}#mermaid-1795017890549 .cluster-label text{fill:#333;}#mermaid-1795017890549 .cluster-label span,#mermaid-1795017890549 p{color:#333;}#mermaid-1795017890549 .label text,#mermaid-1795017890549 span,#mermaid-1795017890549 p{fill:#333;color:#333;}#mermaid-1795017890549 .node rect,#mermaid-1795017890549 .node circle,#mermaid-1795017890549 .node ellipse,#mermaid-1795017890549 .node polygon,#mermaid-1795017890549 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#mermaid-1795017890549 .flowchart-label text{text-anchor:middle;}#mermaid-1795017890549 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mermaid-1795017890549 .node .label{text-align:center;}#mermaid-1795017890549 .node.clickable{cursor:pointer;}#mermaid-1795017890549 .arrowheadPath{fill:#333333;}#mermaid-1795017890549 .edgePath .path{stroke:#333333;stroke-width:2.0px;}#mermaid-1795017890549 .flowchart-link{stroke:#333333;fill:none;}#mermaid-1795017890549 .edgeLabel{background-color:#e8e8e8;text-align:center;}#mermaid-1795017890549 .edgeLabel rect{opacity:0.5;background-color:#e8e8e8;fill:#e8e8e8;}#mermaid-1795017890549 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#mermaid-1795017890549 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#mermaid-1795017890549 .cluster text{fill:#333;}#mermaid-1795017890549 .cluster span,#mermaid-1795017890549 p{color:#333;}#mermaid-1795017890549 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#mermaid-1795017890549 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#mermaid-1795017890549 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker orient="auto" markerHeight="12" markerWidth="12" markerUnits="userSpaceOnUse" refY="5" refX="6" viewBox="0 0 10 10" class="marker flowchart" id="mermaid-1795017890549_flowchart-pointEnd"><path style="stroke-width: 1; stroke-dasharray: 1, 0;" class="arrowMarkerPath" d="M 0 0 L 10 5 L 0 10 z"></path></marker><marker orient="auto" markerHeight="12" markerWidth="12" markerUnits="userSpaceOnUse" refY="5" refX="4.5" viewBox="0 0 10 10" class="marker flowchart" id="mermaid-1795017890549_flowchart-pointStart"><path style="stroke-width: 1; stroke-dasharray: 1, 0;" class="arrowMarkerPath" d="M 0 5 L 10 10 L 10 0 z"></path></marker><marker orient="auto" markerHeight="11" markerWidth="11" markerUnits="userSpaceOnUse" refY="5" refX="11" viewBox="0 0 10 10" class="marker flowchart" id="mermaid-1795017890549_flowchart-circleEnd"><circle style="stroke-width: 1; stroke-dasharray: 1, 0;" class="arrowMarkerPath" r="5" cy="5" cx="5"></circle></marker><marker orient="auto" markerHeight="11" markerWidth="11" markerUnits="userSpaceOnUse" refY="5" refX="-1" viewBox="0 0 10 10" class="marker flowchart" id="mermaid-1795017890549_flowchart-circleStart"><circle style="stroke-width: 1; stroke-dasharray: 1, 0;" class="arrowMarkerPath" r="5" cy="5" cx="5"></circle></marker><marker orient="auto" markerHeight="11" markerWidth="11" markerUnits="userSpaceOnUse" refY="5.2" refX="12" viewBox="0 0 11 11" class="marker cross flowchart" id="mermaid-1795017890549_flowchart-crossEnd"><path style="stroke-width: 2; stroke-dasharray: 1, 0;" class="arrowMarkerPath" d="M 1,1 l 9,9 M 10,1 l -9,9"></path></marker><marker orient="auto" markerHeight="11" markerWidth="11" markerUnits="userSpaceOnUse" refY="5.2" refX="-1" viewBox="0 0 11 11" class="marker cross flowchart" id="mermaid-1795017890549_flowchart-crossStart"><path style="stroke-width: 2; stroke-dasharray: 1, 0;" class="arrowMarkerPath" d="M 1,1 l 9,9 M 10,1 l -9,9"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path marker-end="url(#mermaid-1795017890549_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-S LE-P" id="L-S-P-0" d="M135.953,142.547L140.12,142.547C144.286,142.547,152.62,142.547,164.688,142.547C176.757,142.547,192.56,142.547,200.462,142.547L208.364,142.547"></path><path marker-end="url(#mermaid-1795017890549_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-P LE-E" id="L-P-E-0" d="M312.227,129.544L337.04,122.996C361.854,116.449,411.482,103.354,455.898,90.236C500.314,77.119,539.52,63.98,559.122,57.41L578.725,50.84"></path><path marker-end="url(#mermaid-1795017890549_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-P LE-X" id="L-P-X-0" d="M312.227,148.217L337.04,151.071C361.854,153.926,411.482,159.635,455.608,162.49C499.733,165.344,538.357,165.344,557.669,165.344L576.981,165.344"></path><path marker-end="url(#mermaid-1795017890549_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-A LE-E" id="L-A-E-0" d="M339.938,20.297L360.133,20.297C380.328,20.297,420.719,20.297,460.475,22.304C500.232,24.311,539.355,28.325,558.916,30.332L578.478,32.34"></path><path marker-end="url(#mermaid-1795017890549_flowchart-pointEnd)" style="fill:none;" class="edge-thickness-normal edge-pattern-solid flowchart-link LS-E LE-G" id="L-E-G-0" d="M658.109,36.695L669.888,36.695C681.667,36.695,705.224,36.695,727.653,36.695C750.082,36.695,771.383,36.695,782.034,36.695L792.684,36.695"></path></g><g class="edgeLabels"><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g transform="translate(461.109375, 90.25854110717773)" class="edgeLabel"><g transform="translate(-96.171875, -12.796875)" class="label"><foreignObject height="25.59375" width="192.34375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel">teacher or admin approves</span></div></foreignObject></g></g><g transform="translate(461.109375, 165.34427452087402)" class="edgeLabel"><g transform="translate(-25.140625, -12.796875)" class="label"><foreignObject height="25.59375" width="50.28125"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel">rejects</span></div></foreignObject></g></g><g class="edgeLabel"><g transform="translate(0, 0)" class="label"><foreignObject height="0" width="0"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel"></span></div></foreignObject></g></g><g transform="translate(728.78125, 36.6953125)" class="edgeLabel"><g transform="translate(-44.203125, -12.796875)" class="label"><foreignObject height="25.59375" width="88.40625"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="edgeLabel">badge swipe</span></div></foreignObject></g></g></g><g class="nodes"><g transform="translate(67.9765625, 142.54739952087402)" data-id="S" data-node="true" id="flowchart-S-32" class="node default default flowchart-label"><rect height="40.59375" width="135.953125" y="-20.296875" x="-67.9765625" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-60.4765625, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="120.953125"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Student requests</span></div></foreignObject></g></g><g transform="translate(262.9453125, 142.54739952087402)" data-id="P" data-node="true" id="flowchart-P-33" class="node default default flowchart-label"><path transform="translate(-49.28125,-36.829583974000556)" d="M 0,11.02180598266704 a 49.28125,11.02180598266704 0,0,0 98.5625 0 a 49.28125,11.02180598266704 0,0,0 -98.5625 0 l 0,51.61555598266704 a 49.28125,11.02180598266704 0,0,0 98.5625 0 l 0,-51.61555598266704" style=""></path><g transform="translate(-41.78125, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="83.5625"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">pending list</span></div></foreignObject></g></g><g transform="translate(620.9296875, 36.6953125)" data-id="E" data-node="true" id="flowchart-E-35" class="node default default flowchart-label"><path transform="translate(-37.1796875,-34.28406051610628)" d="M 0,9.324790344070852 a 37.1796875,9.324790344070852 0,0,0 74.359375 0 a 37.1796875,9.324790344070852 0,0,0 -74.359375 0 l 0,49.91854034407085 a 37.1796875,9.324790344070852 0,0,0 74.359375 0 l 0,-49.91854034407085" style=""></path><g transform="translate(-29.6796875, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="59.359375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">enrolled</span></div></foreignObject></g></g><g transform="translate(620.9296875, 165.34427452087402)" data-id="X" data-node="true" id="flowchart-X-37" class="node default default flowchart-label"><rect height="40.59375" width="77.296875" y="-20.296875" x="-38.6484375" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-31.1484375, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="62.296875"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">removed</span></div></foreignObject></g></g><g transform="translate(262.9453125, 20.296875)" data-id="A" data-node="true" id="flowchart-A-38" class="node default default flowchart-label"><rect height="40.59375" width="153.984375" y="-20.296875" x="-76.9921875" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-69.4921875, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="138.984375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Admin direct enroll</span></div></foreignObject></g></g><g transform="translate(858.2265625, 36.6953125)" data-id="G" data-node="true" id="flowchart-G-41" class="node default default flowchart-label"><rect height="40.59375" width="120.484375" y="-20.296875" x="-60.2421875" ry="0" rx="0" style="" class="basic label-container"></rect><g transform="translate(-52.7421875, -12.796875)" style="" class="label"><rect></rect><foreignObject height="25.59375" width="105.484375"><div style="display: inline-block; white-space: nowrap;" xmlns="http://www.w3.org/1999/xhtml"><span class="nodeLabel">Door GRANTED</span></div></foreignObject></g></g></g></g></g></svg></div>
+</div></div>
+      <div><h4>Good details to mention</h4><ul>
+        <li>"Assigned faculty" means a teacher can only approve or lock <b>their own</b> classrooms.</li>
+        <li><code>resolveRoomQuery</code> accepts a room ID or number, even with a stray leading colon from Postman (<code>:ENG-301</code>).</li>
+        <li>Room fields include clearance (GENERAL / FACULTY_ONLY / RESTRICTED), type, capacity, <code>isLocked</code> and <code>isEmergencyLocked</code>.</li>
+      </ul></div>
+    </div>
+    <div class="changed"><h4>Changed for the final</h4><ul>
+      <li>Security fix: <code>/emergency/set-lockdown</code> is admin-only. Faculty could trigger a campus lockdown before.</li>
+      <li>Every route checks the role inside the service too (defence in depth).</li>
+      <li>Room edits accept only safe fields, so nobody can overwrite rosters or IDs through PUT.</li>
+      <li>Search filters (building, course) are escaped, so a malicious pattern can't slow down or break the database query.</li>
+    </ul></div>
+    <div class="qa">
+      <h4>Likely questions</h4>
+      <div class="q"><b>How does enrollment affect the door?</b><p>Access Log reads the room's <code>enrolledStudents</code> and <code>assignedFaculty</code> on every swipe. Once a teacher approves you, your next swipe is GRANTED, with no separate permission needed.</p></div>
+      <div class="q"><b>Why store rosters inside the room document?</b><p>One read answers "is this person in this class?", which is exactly what the door needs. It's fine for class sizes. For huge rosters a separate enrollments collection would scale better.</p></div>
+    </div>
+  </article>
+
+  <article class="svc">
+    <div class="svc-head"><h3>Student service</h3><div class="meta"><span class="tag pan">port 5007</span><span class="tag">Student_Microservice/index.js</span></div></div>
+    <p class="oneliner">The student's own portal: view and edit your profile, and see which rooms you can enter.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Method</th><th>Path</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td class="m">GET</td><td class="m">/api/students/user_info</td><td>Your profile (never the password).</td></tr>
+        <tr><td class="m">PUT</td><td class="m">/api/students/update_info</td><td>Change only name, phone or password (password re-hashed with bcrypt).</td></tr>
+        <tr><td class="m">GET</td><td class="m">/api/students/room_schedule</td><td>Your active permissions (<code>schedules</code>) and the classrooms you're enrolled in (<code>classrooms</code>).</td></tr>
+      </tbody>
+    </table></div>
+    <p>Only accounts with role <code>student</code> can use it (checked at the gateway and in the service). You can only ever see or change <b>your own</b> data, because the email comes from your token, not the request.</p>
+  </article>
+
+  <article class="svc">
+    <div class="svc-head"><h3>Teacher service</h3><div class="meta"><span class="tag pan">port 5008</span><span class="tag">Teacher_Microservice/index.js</span></div></div>
+    <p class="oneliner">The same portal for faculty: <code>/api/teachers/user_info</code>, <code>/update_info</code>, <code>/room_schedule</code>. The schedule lists the classrooms you're assigned to teach.</p>
+    <div class="changed"><h4>Changed for the final (both Student and Teacher)</h4><ul>
+      <li>They stay two separate microservices, each with its own image, Deployment, Service and port.</li>
+      <li>Their code was 95% identical, so the routes moved to <code>shared/portal.js</code>. Each service is now about 40 lines that call it with its own role (<code>student</code> / <code>faculty</code>) and roster field.</li>
+      <li><code>room_schedule</code> now also returns classrooms, since enrollment grants door access.</li>
+      <li>Fixed both <code>package.json</code> files, which were still named <code>room-microservice</code>.</li>
+      <li>The gateway used to let admins into these routes, but the services rejected them. Now both sides agree.</li>
+    </ul></div>
+    <div class="qa">
+      <h4>Likely questions</h4>
+      <div class="q"><b>If the code is shared, why two services?</b><p>Separate deployment and scaling: in exam week students hammer their portal. Each can be scaled, updated or restarted without touching the other. Sharing the code just avoids fixing the same bug twice.</p></div>
+      <div class="q"><b>Can a student edit their role or email?</b><p>No. <code>update_info</code> only accepts name, phone and password, and the user is identified by the token.</p></div>
+    </div>
+  </article>
+</section>
+
+<!-- ============================ KUBERNETES ============================ -->
+<section id="kubernetes" aria-labelledby="k8s-h">
+  <div class="owner-head k8s"><h2 id="k8s-h">Kubernetes: everyone should know this</h2><span class="eyebrow">k8s/ folder · scripts/</span></div>
+  <p>Midterm: Docker Compose on one EC2 machine, with two hand-made copies of Access Log. Final: Kubernetes. It restarts crashed containers, scales services, rolls out updates without downtime, and keeps internal services private.</p>
+  <div class="glossary">
+    <div class="term"><b>Namespace</b><span><code>smart-campus</code> groups all our resources, so <code>kubectl delete namespace smart-campus</code> removes everything.</span><span class="where">00-namespace.yaml</span></div>
+    <div class="term"><b>Deployment</b><span>Keeps N copies (pods) of a service running and replaces any that die. Rolling updates replace old pods with new ones gradually, so there's no downtime.</span><span class="where">20-deployments.yaml, 21-gateway.yaml</span></div>
+    <div class="term"><b>Service · ClusterIP</b><span>A stable internal name + IP for a set of pods (e.g. <code>room-service:5003</code>). Not reachable from outside.</span><span class="where">10-services.yaml</span></div>
+    <div class="term"><b>Service · LoadBalancer</b><span>Used only by the NGINX Ingress Controller, so Docker Desktop publishes it on <code>localhost:80</code>. None of our app Services are LoadBalancers.</span><span class="where">ingress-nginx namespace</span></div>
+    <div class="term"><b>Headless Service</b><span><code>clusterIP: None</code>: DNS returns every ready pod's IP. Our gateway uses it for round-robin.</span><span class="where">access-log-headless</span></div>
+    <div class="term"><b>ConfigMap</b><span>Non-secret settings: service URLs, the headless DNS name, NODE_ENV.</span><span class="where">01-config.yaml</span></div>
+    <div class="term"><b>Secret</b><span>MONGO_URI, JWT_SECRET, admin login. Each service only gets the keys it needs. Created by the deploy script with a random JWT key.</span><span class="where">02-secret.example.yaml</span></div>
+    <div class="term"><b>StatefulSet</b><span>Runs MongoDB with a stable name (<code>mongodb-0</code>) and its own persistent disk, so data survives restarts.</span><span class="where">04-mongodb.yaml</span></div>
+    <div class="term"><b>PersistentVolumeClaim</b><span>A request for disk. The gateway's log file lives on one, shared with its sidecar.</span><span class="where">03-storage.yaml</span></div>
+    <div class="term"><b>Sidecar container</b><span><code>log-reader</code> (busybox) runs in the gateway pod and tails the same log file: two containers sharing one volume.</span><span class="where">21-gateway.yaml</span></div>
+    <div class="term"><b>Readiness probe</b><span><code>/health</code>: checks MongoDB too. If it fails, the pod gets no traffic but isn't restarted.</span><span class="where">every Deployment</span></div>
+    <div class="term"><b>Liveness probe</b><span><code>/livez</code>: is the process alive? If it fails, Kubernetes restarts the container. It doesn't check the DB, so a DB outage can't cause restart loops.</span><span class="where">every Deployment</span></div>
+    <div class="term"><b>HorizontalPodAutoscaler</b><span>Scales Access Log between 2 and 5 pods at 60% CPU. Needs metrics-server.</span><span class="where">25-autoscaling.yaml</span></div>
+    <div class="term"><b>PodDisruptionBudget</b><span>At least 1 Access Log pod stays up during planned maintenance.</span><span class="where">25-autoscaling.yaml</span></div>
+    <div class="term"><b>Resource requests / limits</b><span>Each pod reserves 50m CPU / 96 MiB and is capped at 500m / 256 MiB, so one service can't starve the others. The HPA needs requests to compute %.</span><span class="where">every Deployment</span></div>
+    <div class="term"><b>Security context</b><span>Containers run as non-root user 1000, with privilege escalation disabled.</span><span class="where">every Deployment</span></div>
+    <div class="term"><b>Downward API</b><span>Kubernetes injects the pod's own name as <code>POD_NAME</code>. That's how swipes show which pod served them.</span><span class="where">every Deployment</span></div>
+    <div class="term"><b>NetworkPolicy</b><span>A firewall between pods. Default: nothing can reach our pods. Then three exceptions: Ingress Controller → gateway, gateway → services, services → MongoDB. So the Ingress is the only way in, even at network level. Enforced by the network plugin (kindnet on Docker Desktop).</span><span class="where">30-network-policy.yaml · labels <code>campus-tier</code></span></div>
+    <div class="term"><b>Ingress</b><span>The public front door: HTTP rules that route <code>http://localhost</code> and <code>http://smartcampus.local</code> to the <code>api-gateway</code> Service. Served by the NGINX Ingress Controller, which <code>deploy.ps1</code> installs.</span><span class="where">40-ingress.yaml</span></div>
+  </div>
+  <h3>How deployment works</h3>
+  <p><b>Publishing (Sokhadom, after a code change):</b> <code>scripts\build-images.ps1 -Registry sokhadum -Push</code> builds the 9 images from the repository root (so they include <code>shared/</code>), gives the build a unique tag like <code>build-20261118-170528</code>, pushes them to Docker Hub as public <code>sokhadum/smart-campus-&lt;service&gt;</code> images, and points <code>k8s/*.yaml</code> at that exact tag. The updated YAML then goes to GitHub.</p>
+  <p><b>Deploying on any laptop</b> (two ways):</p>
+  <ol>
+    <li><b>From Docker Hub (normal way):</b> <code>scripts\deploy.ps1 -UseDockerHub</code> applies the YAML as committed, and Kubernetes <b>downloads</b> the pinned images from Docker Hub. No building needed, but it needs internet.</li>
+    <li><b>Build locally (offline backup):</b> <code>scripts\deploy.ps1</code> builds the images on the laptop and <b>loads them into the cluster</b> (on Docker Desktop's kind mode the cluster can't see <code>docker build</code> images, so they're imported into the node; minikube and kind have their own loaders). It rewrites the YAML to use those local images.</li>
+  </ol>
+  <p>Either way, <code>deploy.ps1</code> then creates the Secret (random JWT key, bootstrap admin), applies every manifest, and waits until all pods are ready. <code>scripts\open-app.ps1</code> opens the app through the Ingress if the cluster doesn't publish it on localhost; <code>scripts\dashboard.ps1</code> opens the Kubernetes Dashboard.</p>
+  <div class="qa">
+    <h4>Likely questions</h4>
+    <div class="q"><b>What does the Ingress do, and why not just a LoadBalancer Service?</b><p>The Ingress is an HTTP router at the edge of the cluster: one entry point with rules by host name and path (here <code>localhost</code> and <code>smartcampus.local</code> → the gateway). A LoadBalancer gives each Service its own external address; an Ingress lets many apps share one, adds host/path routing and is where TLS would go. So our app Services are all internal (ClusterIP) and the Ingress is the only door.</p></div>
+    <div class="q"><b>Ingress vs Ingress Controller?</b><p>The <b>Ingress</b> is just the rules (our YAML). The <b>Ingress Controller</b> is the program that follows them: an NGINX pod in the <code>ingress-nginx</code> namespace. Without a controller an Ingress does nothing. <code>deploy.ps1</code> installs it.</p></div>
+    <div class="q"><b>So the request goes through two "gateways"?</b><p>Yes, with different jobs. The Ingress is the cluster's network door (HTTP routing). The API Gateway is the app's door (JWT check, roles, round-robin to Access Log pods). Path: browser → Ingress → API Gateway → service.</p></div>
+    <div class="q"><b>Where do the images come from?</b><p>All 9 are published on Docker Hub as public images, <code>sokhadum/smart-campus-&lt;service&gt;</code>, and the YAML points at one pinned build tag, so every laptop runs identical code. <code>deploy.ps1 -UseDockerHub</code> makes Kubernetes download them. <code>build-images.ps1 -Registry sokhadum -Push</code> publishes a new version. Without <code>-UseDockerHub</code> the script builds locally, which works offline as a backup.</p></div>
+    <div class="q"><b>Why pin a build tag instead of :latest?</b><p><code>latest</code> changes every time someone pushes, so two laptops could run different code with the same YAML. A pinned tag like <code>build-20261118-170528</code> always means the same image, and rolling back is just pointing at an older tag.</p></div>
+    <div class="q"><b>Why the unique image tag?</b><p>Kubernetes only re-pulls an image when the tag changes. With the same <code>:local</code> tag, a rebuilt image would be ignored and old code would keep running. We hit exactly that while testing.</p></div>
+    <div class="q"><b>Why is the gateway's update strategy "Recreate"?</b><p>Its log volume is ReadWriteOnce (one pod at a time), so the old pod must stop before the new one starts.</p></div>
+    <div class="q honest"><b>Are Kubernetes Secrets encrypted?</b><p>By default they're only base64-encoded in etcd, not encrypted. Production clusters enable encryption at rest or use a vault. For this demo, the point is that secrets are out of the code and images.</p></div>
+  </div>
+</section>
+
+<!-- ============================ TEAM QUESTIONS ============================ -->
+<section id="questions" aria-labelledby="q-h">
+  <h2 id="q-h">Questions anyone might get</h2>
+  <div class="qa">
+    <div class="q"><b>Why microservices instead of one app?</b><p>Each service can be developed, deployed, scaled and restarted on its own. We scale only Access Log because it's the busy one. A crash in Emergency doesn't take down login.</p></div>
+    <div class="q"><b>Why an API gateway?</b><p>One entry point: authentication and role checks happen once, internal services stay hidden, and the browser needs one address instead of nine.</p></div>
+    <div class="q"><b>What changed from midterm to final?</b><p>EC2 + Docker Compose became Kubernetes. Two fixed Access Log copies became an autoscaled Deployment discovered through DNS. MongoDB runs inside the cluster with persistent storage. We added health probes, resource limits, non-root containers, Secrets, NetworkPolicies, and the security fixes (header spoofing, public admin sign-up, faculty lockdown, swipe impersonation). Duplicated code moved into <code>shared/</code>.</p></div>
+    <div class="q"><b>What if MongoDB goes down?</b><p>Each service's <code>/health</code> starts returning 503, so Kubernetes stops sending traffic to it (readiness). The process stays alive (liveness), and Mongoose reconnects automatically when the DB returns.</p></div>
+    <div class="q honest"><b>Isn't sharing one database against microservice rules?</b><p>Strictly, each service should own a private database. We use one database with one collection per owning service, which keeps the project simple. The cost: a few services read others' collections directly (Access Log reads rooms and permissions). Fixing that would mean API calls or events between services.</p></div>
+    <div class="q"><b>How do you know it works?</b><p><code>node run_tests.js</code> runs 35 checks: registration, login, roles, bad tokens, round-robin across pods, the four security fixes, enrollment-based door access, overnight permissions, and lockdown lifting. The dashboard also has a built-in verification button.</p></div>
+  </div>
+</section>
+
+<!-- ============================ RUN SHEET ============================ -->
+<section id="runsheet" aria-labelledby="rs-h">
+  <h2 id="rs-h">Demo run sheet</h2>
+  <p>Before the professor arrives: <code>git checkout sokhadomfinal</code>, run <code>scripts\deploy.ps1 -InstallMetricsServer</code>, open the app, and open the Dashboard. Log in as admin once to confirm.</p>
+  <ol class="runsheet">
+    <li><span class="by sok">Sokhadom</span><span>Architecture diagram and the gateway's role. <code>kubectl -n smart-campus get pods,svc,hpa,pvc,ingress</code>: all app Services are internal; the Ingress is the only way in. Open <code>http://localhost</code> to show traffic coming through it. Quick tour of the dashboard UI.</span></li>
+    <li><span class="by bou">Boukheang</span><span>Register a student publicly (works), then try <code>role: admin</code> (403). Explain the bootstrap admin.</span></li>
+    <li><span class="by bou">Boukheang</span><span>Log in. Show the JWT and that a bad or missing token is rejected (401/403).</span></li>
+    <li><span class="by pan">Panhavan</span><span>Create a room, assign a teacher. Student requests enrollment, the teacher approves it in the roster.</span></li>
+    <li><span class="by bou">Boukheang</span><span>Swipe as that student: GRANTED. Swipe as a non-enrolled student: DENIED. Explain the door decision order.</span></li>
+    <li><span class="by sok">Sokhadom</span><span>Click <i>Swipe 4 times</i>: the gateway's round-robin alternates pods in the live panel. Explain the headless Service and the X-Served-By-Instance header.</span></li>
+    <li><span class="by sok">Sokhadom</span><span>Grant a permission with a time window (try an overnight one). Use <code>/check</code> with a Sunday timestamp to show OUTSIDE_ALLOWED_DAYS.</span></li>
+    <li><span class="by pan">Panhavan</span><span>Student portal: profile and room schedule showing the enrolled class. Teacher portal: assigned classes. Lock a room as its teacher.</span></li>
+    <li><span class="by sok">Sokhadom</span><span>Click <i>Start campus lockdown</i>. Every swipe is DENIED, even admin's. Lift it. Show alert history.</span></li>
+    <li><span class="by all">Anyone</span><span>Kubernetes Dashboard: scale <code>access-log-service</code> to 3 (a third card appears in the UI), then delete a pod and watch it come back.</span></li>
+    <li><span class="by all">Anyone</span><span>Click <i>Run system checks</i> in the UI or <code>node run_tests.js</code>: 35 passed.</span></li>
+  </ol>
+</section>
+
+</div>
+
+</body>
+</html>
