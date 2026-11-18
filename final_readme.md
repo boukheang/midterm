@@ -124,7 +124,7 @@ use, so run `scripts\dashboard.ps1` once **before** the presentation while onlin
    Only `api-gateway` is exposed; all other Services are `ClusterIP`.
 2. **Login & RBAC**: log in as admin, faculty, student (quick buttons). Each role sees
    different panels. Public sign-up only offers Student/Faculty. Admins come from the Secret.
-3. **Round-robin load balancing**: click *Simulate 4x Swipes*. The panel shows each
+3. **Round-robin load balancing**: click *Swipe 4 times*. The panel shows each
    Access Log **pod name** taking turns (`X-Served-By-Instance` header).
 4. **Scale live**: `kubectl -n smart-campus scale deploy access-log-service --replicas=3`
    (or use the Dashboard). Within ~5 seconds the gateway discovers the new pod
@@ -138,7 +138,7 @@ use, so run `scripts\dashboard.ps1` once **before** the presentation while onlin
    ```powershell
    kubectl -n smart-campus logs deploy/api-gateway -c log-reader
    ```
-9. **Automated checks**: *Run test.md Verification* in the UI, or
+9. **Automated checks**: *Run system checks* in the UI, or
    ```powershell
    node run_tests.js
    ```

@@ -508,7 +508,7 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
 1. Open `http://localhost:4000/` in your browser.
 2. Under **Door Badge Swipe & Round-Robin Load Balancer**:
    - Select a room from the **Target Room** dropdown (e.g. `ENG-301`).
-   - Click **"Swipe Badge (Single)"** or **"Simulate 4x Swipes"**.
+   - Click **"Swipe badge"** or **"Swipe 4 times"**.
 3. **What to Observe**:
    - One card per Access Log pod appears; the pod that served the request highlights with a blue border.
    - The request counters increment evenly across pods (scale with `kubectl -n smart-campus scale deploy access-log-service --replicas=3` and a third card appears).
@@ -522,7 +522,7 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
 
 1. In the **Campus Room Management** table on the right:
    - Click the **"Lock"** button on any room (e.g., `ENG-146`). The room status changes to `LOCKED`.
-2. Go back to the swipe simulator, select that locked room, and click **"Swipe Badge (Single)"**.
+2. Go back to the swipe simulator, select that locked room, and click **"Swipe badge"**.
 3. **What to Observe**:
    - The solenoid status box flashes red: `DOOR DEADBOLTED • Denied (ROOM_PHYSICALLY_LOCKED)`.
    - Access decision returns `DENIED`.
@@ -533,7 +533,7 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
 
 ### 6.3 Testing Campus Emergency Lockdown
 
-1. In the top emergency banner, click **"Activate Campus Lockdown"**.
+1. In the top emergency banner, click **"Start campus lockdown"**.
 2. **What to Observe**:
    - The banner turns red: `CAMPUS LOCKDOWN ACTIVE`.
    - All rooms across the campus are immediately put into emergency lock.
@@ -542,5 +542,5 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
 
 ### 6.4 One-Click Automated Verification
 
-1. Click the blue **"Run test.md Verification"** button in the top session bar.
+1. Click the **"Run system checks"** button next to your name.
 2. The verification terminal runs all 5 test sections live and displays a green `ALL CHECKS PASSED (100%)` badge.
