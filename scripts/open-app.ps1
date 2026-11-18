@@ -26,6 +26,6 @@ if ($Direct) {
 if ($Port -eq 0) { $Port = 80 }
 $url = if ($Port -eq 80) { 'http://localhost' } else { "http://localhost:$Port" }
 Write-Host "Smart Campus through the Ingress: $url   (Ctrl+C to stop)" -ForegroundColor Green
-Write-Host "Named host: add '127.0.0.1 smartcampus.local' to C:\Windows\System32\drivers\etc\hosts, then use http://smartcampus.local$(if ($Port -ne 80) { ":$Port" })" -ForegroundColor DarkGray
+Write-Host "Named host (browser, no setup): http://smartcampus.localhost$(if ($Port -ne 80) { ":$Port" })" -ForegroundColor DarkGray
 Start-Job -ArgumentList $url { param($u) Start-Sleep -Seconds 3; Start-Process $u } | Out-Null
 kubectl.exe -n ingress-nginx port-forward svc/ingress-nginx-controller "${Port}:80"

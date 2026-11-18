@@ -2,11 +2,10 @@
 #   browser --HTTP--> ingress-nginx controller --> api-gateway Service (ClusterIP) --> services
 # The NGINX Ingress Controller is installed by scripts/deploy.ps1.
 #
-# Two ways to reach it:
-#   http://localhost              (rule without a host - works with no extra setup)
-#   http://smartcampus.local      (named host - add this line to
-#                                  C:\Windows\System32\drivers\etc\hosts as Administrator:
-#                                  127.0.0.1 smartcampus.local)
+# Two ways to reach it, both with NO setup on the laptop:
+#   http://smartcampus.localhost  (named host - browsers treat every *.localhost
+#                                  name as this computer, so no hosts-file edit)
+#   http://localhost              (catch-all rule - also used by run_tests.js and Postman)
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -21,7 +20,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: smartcampus.local
+    - host: smartcampus.localhost
       http:
         paths:
           - path: /

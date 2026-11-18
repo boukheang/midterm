@@ -149,7 +149,7 @@ for ($i = 0; $i -lt 10 -and -not $lb; $i++) {
     if (-not $lb) { Start-Sleep -Seconds 2 }
 }
 if ($lb) {
-    Write-Host '  Open the app   : http://localhost   (or http://smartcampus.local after adding it to the hosts file)'
+    Write-Host '  Open the app   : http://smartcampus.localhost   (or http://localhost)'
 }
 else {
     Write-Host '  This cluster does not publish the Ingress on localhost by itself.' -ForegroundColor Yellow

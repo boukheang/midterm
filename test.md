@@ -2,7 +2,7 @@
 
 > **Base URL**:
 >
-> - Through the Kubernetes Ingress: `http://localhost` (or `http://smartcampus.local`)
+> - Through the Kubernetes Ingress: `http://localhost` (in a browser also `http://smartcampus.localhost`)
 > - If the Ingress isn't published on localhost: run `scripts\open-app.ps1` first
 >
 > The admin account (`admin@campus.edu`) is created automatically from the

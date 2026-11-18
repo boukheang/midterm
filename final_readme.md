@@ -8,7 +8,7 @@ role-based access control and load-balances door swipes across the Access Log po
 
 | Component | Kubernetes object | Port | Purpose |
 |---|---|---:|---|
-| Ingress (NGINX) | Ingress + NGINX Ingress Controller | 80 | Public entry point: `http://localhost` / `http://smartcampus.local` → API Gateway |
+| Ingress (NGINX) | Ingress + NGINX Ingress Controller | 80 | Public entry point: `http://smartcampus.localhost` / `http://localhost` → API Gateway |
 | API Gateway | Deployment + `ClusterIP` Service | 4000 | Application entry point: JWT + RBAC, round-robin LB, dashboard UI |
 | Registration | Deployment + `ClusterIP` | 5001 | Sign-up, admin user management, bootstrap admin |
 | Authentication | Deployment + `ClusterIP` | 5002 | Login, JWT issuing |
@@ -39,7 +39,7 @@ Kubernetes manifests are in [`k8s/`](k8s/):
 | `21-gateway.yaml` | API Gateway Deployment, sidecar, internal `ClusterIP` Service |
 | `25-autoscaling.yaml` | HorizontalPodAutoscaler + PodDisruptionBudget for Access Log |
 | `30-network-policy.yaml` | NetworkPolicies: only the gateway can reach the services, only services can reach MongoDB |
-| `40-ingress.yaml` | Ingress: routes `localhost` and `smartcampus.local` to the gateway (controller installed by `deploy.ps1`) |
+| `40-ingress.yaml` | Ingress: routes `smartcampus.localhost` and `localhost` to the gateway (controller installed by `deploy.ps1`) |
 | `dashboard/dashboard-admin.yaml` | Login account for the Kubernetes Dashboard |
 
 ## Deploy on the demo laptop (Windows + Docker Desktop)
@@ -77,8 +77,9 @@ Kubernetes manifests are in [`k8s/`](k8s/):
 
    Log in with the **Admin** quick button (`admin@campus.edu` / `Password123!`, set by `-AdminPassword`).
 
-> Optional nicer name: add `127.0.0.1 smartcampus.local` to `C:\Windows\System32\drivers\etc\hosts`
-> (open Notepad as Administrator), then use **http://smartcampus.local**.
+> Named address: **http://smartcampus.localhost** works too, with no setup. Browsers treat every
+> `*.localhost` name as this computer, so no hosts-file edit is needed. (Tests and Postman use
+> `http://localhost`, because Node.js does not resolve `*.localhost` names.)
 >
 > If port 80 is busy, run `scripts\open-app.ps1 -Port 8080` and open http://localhost:8080.
 > Stop any old midterm `docker compose` stack first (`docker compose down`).
