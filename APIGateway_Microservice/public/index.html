@@ -6,74 +6,54 @@
     <title>Smart Campus Access</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Campus access console: light by default, dark when the OS asks for it.
+        /* Layout: Canvas-style dark blue navigation rail on the left, white content
+           area with large page titles; one section ("page") visible at a time.
            Variable names are shared with the inline script, so keep them stable. */
         :root {
-            --bg-base: #f3f5f8;
+            --rail-bg: #0c2f6e;
+            --rail-hover: #163f86;
+            --rail-text: #ffffff;
+            --rail-active-bg: #ffffff;
+            --rail-active-text: #b3202a;
+            --bg-base: #ffffff;
             --bg-surface: #ffffff;
             --bg-card: #ffffff;
-            --bg-inset: #f6f7f9;
-            --bg-hover: #f0f3f7;
-            --border-subtle: #e2e6ec;
-            --border-strong: #c8d0db;
-            --text-primary: #16202c;
-            --text-secondary: #4a5667;
-            --text-muted: #6b7686;
-            --accent-primary: #1f3f80;
-            --accent-hover: #17326a;
-            --accent-soft: #e8eef9;
-            --accent-text: #1f3f80;
-            --status-green-bg: #e6f4ec;
-            --status-green-border: #b5dcc6;
-            --status-green-text: #146c43;
-            --status-red-bg: #fbebea;
-            --status-red-border: #efc1bd;
-            --status-red-text: #b42318;
-            --status-amber-bg: #fdf3df;
-            --status-amber-border: #edd29a;
-            --status-amber-text: #8f5307;
-            --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
-            --font-mono: 'IBM Plex Mono', Consolas, 'SF Mono', Menlo, monospace;
+            --bg-inset: #f5f5f5;
+            --bg-hover: #f2f6fb;
+            --border-subtle: #dfe3e8;
+            --border-strong: #c7cdd1;
+            --text-primary: #2d3b45;
+            --text-secondary: #4f5b66;
+            --text-muted: #6b7780;
+            --accent-primary: #1b5aa6;
+            --accent-hover: #164c8d;
+            --accent-soft: #e7f0fa;
+            --accent-text: #1b5aa6;
+            --status-green-bg: #e9f6ee;
+            --status-green-border: #b6dcc3;
+            --status-green-text: #127a3a;
+            --status-red-bg: #fbeceb;
+            --status-red-border: #efc0bc;
+            --status-red-text: #b3202a;
+            --status-amber-bg: #fdf4e3;
+            --status-amber-border: #edd49e;
+            --status-amber-text: #8a5300;
+            --font-sans: 'Lato', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: Consolas, 'SF Mono', Menlo, 'Courier New', monospace;
+            --rail-width: 86px;
             color-scheme: light;
-        }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-base: #0f1319;
-                --bg-surface: #161b22;
-                --bg-card: #161b22;
-                --bg-inset: #1c222b;
-                --bg-hover: #1f2630;
-                --border-subtle: #262e39;
-                --border-strong: #354152;
-                --text-primary: #e6eaf0;
-                --text-secondary: #aab4c1;
-                --text-muted: #8590a0;
-                --accent-primary: #3a63b8;
-                --accent-hover: #4a73c8;
-                --accent-soft: #1b2740;
-                --accent-text: #8fb0f0;
-                --status-green-bg: #12291e;
-                --status-green-border: #22513a;
-                --status-green-text: #5fcf95;
-                --status-red-bg: #331816;
-                --status-red-border: #6a2a25;
-                --status-red-text: #ff8b7e;
-                --status-amber-bg: #30230e;
-                --status-amber-border: #634a19;
-                --status-amber-text: #f0bb5c;
-                color-scheme: dark;
-            }
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        [hidden] { display: none !important; }
 
         body {
             background: var(--bg-base);
             color: var(--text-primary);
             font-family: var(--font-sans);
-            font-size: 14px;
+            font-size: 15px;
             line-height: 1.5;
             -webkit-font-smoothing: antialiased;
             min-height: 100vh;
@@ -83,208 +63,295 @@
         :focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
 
         .icon {
-            width: 16px; height: 16px; flex-shrink: 0;
-            fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+            width: 18px; height: 18px; flex-shrink: 0;
+            fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
         }
 
-        /* Header */
+        /* ---------- Signed-out header (hidden once signed in) ---------- */
         header {
-            background: var(--bg-surface);
-            border-bottom: 1px solid var(--border-subtle);
+            background: var(--rail-bg); color: #fff;
             padding: 12px 28px;
             display: flex; align-items: center; justify-content: space-between; gap: 16px;
-            position: sticky; top: 0; z-index: 50;
         }
+        body.signed-in header { display: none; }
         .brand { display: flex; align-items: center; gap: 12px; }
         .brand-logo {
-            width: 34px; height: 34px; border-radius: 8px;
-            background: var(--accent-primary); color: #fff;
+            width: 36px; height: 36px; border-radius: 50%;
+            background: #fff; color: var(--rail-bg);
             display: flex; align-items: center; justify-content: center;
         }
-        .brand-title { font-size: 15px; font-weight: 600; letter-spacing: -0.005em; }
-        .brand-subtitle { font-size: 12.5px; color: var(--text-muted); }
+        .brand-title { font-size: 17px; font-weight: 700; }
+        .brand-subtitle { font-size: 13px; opacity: 0.8; }
         .header-status { display: flex; align-items: center; gap: 10px; }
 
-        /* Badges (small status labels) */
+        /* ---------- Global navigation rail ---------- */
+        .global-nav {
+            position: fixed; inset: 0 auto 0 0; width: var(--rail-width); z-index: 40;
+            background: var(--rail-bg); color: var(--rail-text);
+            display: flex; flex-direction: column; align-items: stretch;
+            overflow-y: auto;
+        }
+        .global-nav .rail-logo {
+            height: 72px; display: flex; align-items: center; justify-content: center;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+        .global-nav .rail-logo span {
+            width: 46px; height: 46px; border-radius: 50%; background: #fff; color: var(--rail-bg);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .global-nav .rail-logo .icon { width: 22px; height: 22px; }
+        .rail-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            padding: 11px 4px; color: var(--rail-text); text-decoration: none;
+            font-size: 12px; text-align: center; line-height: 1.2;
+            border: 0; background: transparent; cursor: pointer; font-family: inherit; width: 100%;
+        }
+        .rail-item .icon { width: 24px; height: 24px; stroke-width: 1.6; }
+        .rail-item:hover { background: var(--rail-hover); }
+        .rail-item[aria-current="page"] { background: var(--rail-active-bg); color: var(--rail-active-text); }
+        .rail-item[hidden] { display: none; }
+        .rail-avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: #fff; color: var(--rail-bg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700;
+        }
+        .rail-item[aria-current="page"] .rail-avatar { background: var(--rail-bg); color: #fff; }
+
+        /* Account tray (slides out like Canvas) */
+        .account-tray {
+            position: fixed; top: 0; bottom: 0; left: var(--rail-width); width: 300px; z-index: 39;
+            background: #fff; border-right: 1px solid var(--border-strong);
+            box-shadow: 4px 0 18px rgba(0,0,0,0.12);
+            padding: 28px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .account-tray[hidden] { display: none; }
+        .account-tray .tray-close { position: absolute; top: 12px; right: 12px; }
+        .account-tray .tray-avatar {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: var(--accent-soft); color: var(--accent-text);
+            display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700;
+        }
+        .account-tray .tray-name { font-size: 20px; font-weight: 700; text-align: center; }
+        .account-tray .tray-sub { font-size: 14px; color: var(--text-muted); text-align: center; }
+
+        /* ---------- Content area ---------- */
+        .container { padding: 0 32px 56px; }
+        #mainDashboardContainer { margin-left: var(--rail-width); }
+        .page { display: none; max-width: 1240px; }
+        .page.active { display: block; }
+        .page-header {
+            display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+            padding: 22px 0 14px; margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .page-title { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+        .page-sub { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+        .page-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .page-stack { display: grid; gap: 20px; }
+
+        .lockdown-strip {
+            margin: 14px 0 0; padding: 10px 14px; border-radius: 4px;
+            background: var(--status-red-bg); border: 1px solid var(--status-red-border); color: var(--status-red-text);
+            font-weight: 700; font-size: 14px;
+        }
+        .lockdown-strip[hidden] { display: none; }
+
+        /* Dashboard course-card style shortcuts */
+        .dash-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 22px; margin-top: 22px; }
+        .dash-card {
+            display: flex; flex-direction: column; text-decoration: none; color: inherit;
+            border: 1px solid var(--border-strong); border-radius: 4px; overflow: hidden; background: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08); transition: box-shadow 0.15s ease;
+        }
+        .dash-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.16); }
+        .dash-card[hidden] { display: none; }
+        .dash-card-top { height: 110px; display: flex; align-items: flex-end; padding: 12px 14px; color: #fff; }
+        .dash-card-top .icon { width: 34px; height: 34px; stroke-width: 1.5; opacity: 0.9; }
+        .dash-card-body { padding: 12px 14px 14px; }
+        .dash-card-title { font-weight: 700; color: var(--accent-text); font-size: 15px; }
+        .dash-card-sub { font-size: 13px; color: var(--text-muted); }
+
+        /* Cards */
+        .grid-2, .grid-3 { display: grid; gap: 20px; }
+        .grid-2 { grid-template-columns: 1fr 1fr; }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .card { background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: 4px; min-width: 0; }
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); background: #fafbfc;
+        }
+        .card-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
+        .card-title .icon { display: none; }
+        .card-hint { font-size: 13px; color: var(--text-muted); font-weight: 400; }
+        .card-body { padding: 16px; }
+
+        /* Session greeting on the dashboard */
+        .session-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+        .session-info { display: flex; align-items: center; gap: 12px; }
+        .session-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: var(--accent-soft); color: var(--accent-text);
+            display: flex; align-items: center; justify-content: center; font-weight: 700;
+        }
+        .session-meta-name { font-size: 18px; font-weight: 700; }
+        .session-meta-sub { font-size: 14px; color: var(--text-muted); }
+        .session-controls { display: flex; gap: 8px; }
+
+        /* Badges / pills */
         .badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            font-size: 12px; font-weight: 500;
-            padding: 3px 10px; border-radius: 999px;
-            border: 1px solid var(--border-subtle);
+            display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700;
+            padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border-subtle);
             background: var(--bg-inset); color: var(--text-secondary);
         }
         .badge-live { background: var(--status-green-bg); border-color: var(--status-green-border); color: var(--status-green-text); }
         .badge-danger { background: var(--status-red-bg); border-color: var(--status-red-border); color: var(--status-red-text); }
         .badge-neutral { background: var(--bg-inset); color: var(--text-secondary); }
-
-        /* Layout */
-        .container { max-width: 1320px; margin: 0 auto; padding: 24px 28px 48px; }
-        .grid-2, .grid-3 { display: grid; gap: 20px; }
-        .grid-2 { grid-template-columns: 1fr 1fr; }
-        .grid-3 { grid-template-columns: repeat(3, 1fr); }
-        @media (max-width: 1000px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
-        @media (max-width: 640px) {
-            header, .container { padding-left: 16px; padding-right: 16px; }
-            .brand-subtitle { display: none; }
-        }
-
-        /* Session bar */
-        .session-bar {
-            display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-        .session-info { display: flex; align-items: center; gap: 12px; }
-        .session-avatar {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: var(--accent-soft); color: var(--accent-text);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 600; font-size: 14px;
-        }
-        .session-meta-name { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
-        .session-meta-sub { font-size: 13px; color: var(--text-muted); }
-        .session-controls { display: flex; gap: 8px; }
-
-        /* Cards */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            min-width: 0;
-        }
-        .card-header {
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
-            padding: 14px 18px;
-            border-bottom: 1px solid var(--border-subtle);
-        }
-        .card-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
-        .card-title .icon { display: none; }
-        .card-hint { font-size: 12.5px; color: var(--text-muted); font-weight: 400; }
-        .card-body { padding: 18px; }
-
-        /* Buttons */
-        .btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-            font-family: inherit; font-size: 14px; font-weight: 500;
-            padding: 8px 16px; border-radius: 6px;
-            border: 1px solid transparent; cursor: pointer;
-            transition: background-color 0.12s ease, border-color 0.12s ease;
-        }
-        .btn-primary { background: var(--accent-primary); color: #fff; }
-        .btn-primary:hover { background: var(--accent-hover); }
-        .btn-secondary { background: var(--bg-surface); color: var(--text-primary); border-color: var(--border-strong); }
-        .btn-secondary:hover { background: var(--bg-hover); }
-        .btn-danger { background: var(--bg-surface); color: var(--status-red-text); border-color: var(--status-red-border); }
-        .btn-danger:hover { background: var(--status-red-bg); }
-        .btn-sm { font-size: 13px; padding: 6px 12px; }
-
-        /* Forms */
-        .form-group { margin-bottom: 14px; }
-        .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 5px; }
-        .form-control {
-            width: 100%;
-            font-family: inherit; font-size: 14px;
-            padding: 8px 11px;
-            border: 1px solid var(--border-strong); border-radius: 6px;
-            background: var(--bg-surface); color: var(--text-primary);
-        }
-        .form-control:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px var(--accent-soft); }
-        .form-control[readonly] { background: var(--bg-inset); color: var(--text-secondary); }
-
-        /* Load balancer pods */
-        .lb-intro { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
-        .lb-pool { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 18px; }
-        .lb-node {
-            border: 1px solid var(--border-subtle); border-radius: 8px;
-            padding: 12px 14px; background: var(--bg-inset);
-            transition: border-color 0.2s ease, background-color 0.2s ease;
-        }
-        .lb-node.active-routing { border-color: var(--accent-primary); background: var(--accent-soft); }
-        .lb-node-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
-        .lb-node-name { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
-        .lb-node-metric { font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
-        .lb-node-sub { font-size: 12.5px; color: var(--text-muted); }
-
-        /* Door reader result */
-        .reader {
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
-            padding: 12px 14px; margin-bottom: 16px;
-            border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-inset);
-        }
-        .reader-label { font-size: 12.5px; color: var(--text-muted); }
-        .reader-text { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
-        .reader.reader-granted { background: var(--status-green-bg); border-color: var(--status-green-border); }
-        .reader.reader-granted .reader-text { color: var(--status-green-text); }
-        .reader.reader-denied { background: var(--status-red-bg); border-color: var(--status-red-border); }
-        .reader.reader-denied .reader-text { color: var(--status-red-text); }
-
-        /* Response log */
-        .terminal {
-            background: var(--bg-inset);
-            border: 1px solid var(--border-subtle); border-radius: 8px;
-            padding: 10px 12px;
-            font-family: var(--font-mono); font-size: 12px; line-height: 1.6;
-            max-height: 220px; overflow-y: auto;
-            color: var(--text-secondary);
-        }
-        .terminal-line { overflow-wrap: anywhere; }
-        .terminal-key { color: var(--text-muted); }
-        .terminal-val { color: var(--text-primary); }
-        .terminal-hl { color: var(--accent-text); }
-
-        /* Tables */
-        .table-responsive { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-        th {
-            text-align: left; font-weight: 500; font-size: 12.5px; color: var(--text-muted);
-            padding: 8px 10px; border-bottom: 1px solid var(--border-subtle); white-space: nowrap;
-        }
-        td { padding: 10px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
-        tr:last-child td { border-bottom: none; }
-        tbody tr:hover td { background: var(--bg-hover); }
-
-        /* Pills (status chips inside tables and panels) */
         .pill {
-            display: inline-flex; align-items: center;
-            font-size: 12px; font-weight: 500; line-height: 1.4;
-            padding: 2px 9px; border-radius: 999px;
-            border: 1px solid var(--border-subtle);
-            background: var(--bg-inset); color: var(--text-secondary);
-            white-space: nowrap;
+            display: inline-flex; align-items: center; font-size: 12.5px; font-weight: 700; line-height: 1.4;
+            padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border-subtle);
+            background: var(--bg-inset); color: var(--text-secondary); white-space: nowrap;
         }
         .pill-neutral { background: var(--bg-inset); color: var(--text-secondary); }
         .pill-green { background: var(--status-green-bg); border-color: var(--status-green-border); color: var(--status-green-text); }
         .pill-red { background: var(--status-red-bg); border-color: var(--status-red-border); color: var(--status-red-text); }
         .pill-amber { background: var(--status-amber-bg); border-color: var(--status-amber-border); color: var(--status-amber-text); }
 
+        /* Buttons (Canvas-like: light grey secondary, blue primary) */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            font-family: inherit; font-size: 15px; font-weight: 400;
+            padding: 8px 15px; border-radius: 4px; border: 1px solid transparent; cursor: pointer;
+            transition: background-color 0.12s ease;
+        }
+        .btn-primary { background: var(--accent-primary); color: #fff; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-secondary { background: #f5f5f5; color: var(--text-primary); border-color: var(--border-strong); }
+        .btn-secondary:hover { background: #e8eaec; }
+        .btn-danger { background: #fff; color: var(--status-red-text); border-color: var(--status-red-border); }
+        .btn-danger:hover { background: var(--status-red-bg); }
+        .btn-sm { font-size: 14px; padding: 6px 12px; }
+
+        /* Forms */
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; }
+        .form-control {
+            width: 100%; font-family: inherit; font-size: 15px; padding: 8px 11px;
+            border: 1px solid var(--border-strong); border-radius: 4px; background: #fff; color: var(--text-primary);
+        }
+        .form-control:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 2px var(--accent-soft); }
+        .form-control[readonly] { background: var(--bg-inset); color: var(--text-secondary); }
+
+        /* Searchable dropdown (enhances native <select> and email inputs) */
+        .combo { position: relative; }
+        .combo-input { padding-right: 34px; cursor: pointer; }
+        .combo-input:focus { cursor: text; }
+        .combo-caret {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            pointer-events: none; color: var(--text-muted);
+        }
+        .combo-list {
+            position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; right: 0;
+            max-height: 260px; overflow-y: auto; list-style: none;
+            background: #fff; border: 1px solid var(--border-strong); border-radius: 4px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.14); padding: 4px 0;
+        }
+        .combo-list[hidden] { display: none; }
+        .combo-option { padding: 8px 12px; cursor: pointer; font-size: 14.5px; }
+        .combo-option .combo-meta { display: block; font-size: 12.5px; color: var(--text-muted); }
+        .combo-option[aria-selected="true"], .combo-option:hover { background: var(--accent-soft); }
+        .combo-option.is-current { font-weight: 700; }
+        .combo-empty { padding: 8px 12px; font-size: 14px; color: var(--text-muted); }
+
+        /* Load balancer pods */
+        .lb-intro { font-size: 14px; color: var(--text-muted); margin-bottom: 10px; }
+        .lb-pool { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin-bottom: 18px; }
+        .lb-node {
+            border: 1px solid var(--border-strong); border-left: 6px solid var(--border-strong); border-radius: 4px;
+            padding: 12px 14px; background: #fff; transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+        .lb-node.active-routing { border-color: var(--accent-primary); border-left-color: var(--accent-primary); background: var(--accent-soft); }
+        .lb-node-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+        .lb-node-name { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-secondary); overflow-wrap: anywhere; }
+        .lb-node-metric { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .lb-node-sub { font-size: 13px; color: var(--text-muted); }
+
+        /* Door reader result */
+        .reader {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 12px 14px; margin-bottom: 16px;
+            border: 1px solid var(--border-strong); border-left: 6px solid var(--border-strong); border-radius: 4px; background: #fff;
+        }
+        .reader-label { font-size: 13px; color: var(--text-muted); }
+        .reader-text { font-size: 15px; font-weight: 700; color: var(--text-secondary); }
+        .reader.reader-granted { background: var(--status-green-bg); border-color: var(--status-green-border); border-left-color: var(--status-green-text); }
+        .reader.reader-granted .reader-text { color: var(--status-green-text); }
+        .reader.reader-denied { background: var(--status-red-bg); border-color: var(--status-red-border); border-left-color: var(--status-red-text); }
+        .reader.reader-denied .reader-text { color: var(--status-red-text); }
+
+        /* Response log */
+        .terminal {
+            background: #f7f8f9; border: 1px solid var(--border-subtle); border-radius: 4px;
+            padding: 10px 12px; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
+            max-height: 240px; overflow-y: auto; color: var(--text-secondary);
+        }
+        .terminal-line { overflow-wrap: anywhere; }
+        .terminal-key { color: var(--text-muted); }
+        .terminal-val { color: var(--text-primary); }
+        .terminal-hl { color: var(--accent-text); }
+
+        /* Tables (Canvas list style) */
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+        th {
+            text-align: left; font-weight: 700; font-size: 13px; color: var(--text-secondary);
+            padding: 9px 10px; border-bottom: 2px solid var(--border-subtle); white-space: nowrap;
+        }
+        td { padding: 11px 10px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: var(--bg-hover); }
+
         /* Campus status banner */
         .alert-banner {
             display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-            padding: 12px 16px; margin-bottom: 20px;
-            border: 1px solid var(--border-subtle); border-radius: 10px;
-            background: var(--bg-card);
+            padding: 12px 16px; border: 1px solid var(--border-strong); border-left: 6px solid var(--status-green-text);
+            border-radius: 4px; background: #fff;
         }
-        .alert-banner strong { font-weight: 600; }
+        .alert-banner strong { font-weight: 700; }
         .alert-banner .status-dot {
-            display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+            display: inline-block; width: 9px; height: 9px; border-radius: 50%;
             background: var(--status-green-text); margin-right: 8px; vertical-align: middle;
         }
         .alert-banner.emergency-active {
-            background: var(--status-red-bg); border-color: var(--status-red-border); color: var(--status-red-text);
+            background: var(--status-red-bg); border-color: var(--status-red-border); border-left-color: var(--status-red-text); color: var(--status-red-text);
         }
         .alert-banner.emergency-active .status-dot { background: var(--status-red-text); }
 
-        /* Sub-panels used inside admin forms */
-        .subpanel { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 16px; background: var(--bg-inset); }
-        .subpanel-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; }
+        .subpanel { border: 1px solid var(--border-strong); border-radius: 4px; padding: 16px; background: #fafbfc; }
+        .subpanel-title { font-weight: 700; font-size: 15px; margin-bottom: 10px; }
 
         /* Auth screens */
-        .auth-card { width: 100%; max-width: 420px; }
-        .auth-heading { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
-        .auth-sub { font-size: 13.5px; color: var(--text-muted); }
+        .auth-card { width: 100%; max-width: 420px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+        .auth-heading { font-size: 24px; font-weight: 700; }
+        .auth-sub { font-size: 14px; color: var(--text-muted); }
         .demo-accounts { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-subtle); }
-        .demo-accounts-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
-        .feedback { margin-top: 10px; font-size: 13px; min-height: 20px; }
+        .demo-accounts-label { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
+        .feedback { margin-top: 10px; font-size: 14px; min-height: 20px; }
 
+        @media (max-width: 1000px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+        @media (max-width: 700px) {
+            :root { --rail-width: 0px; }
+            .global-nav {
+                position: sticky; top: 0; inset: auto; width: 100%; height: auto;
+                flex-direction: row; overflow-x: auto; overflow-y: hidden;
+            }
+            .global-nav .rail-logo { display: none; }
+            .rail-item { min-width: 76px; }
+            .account-tray { left: 0; width: 100%; top: 64px; }
+            .container { padding: 0 16px 40px; }
+            header { padding-left: 16px; padding-right: 16px; }
+            .brand-subtitle { display: none; }
+        }
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
     </style>
 </head>
@@ -305,7 +372,6 @@
             </div>
         </div>
         <div class="header-status">
-            <button id="headerSignOutBtn" class="btn btn-secondary btn-sm" onclick="logoutUser()" style="display: none;">Sign out</button>
         </div>
     </header>
 
@@ -403,7 +469,31 @@
 
     <!-- MAIN DASHBOARD (Shown when authenticated) -->
     <div id="mainDashboardContainer" class="container" style="display: none;">
-
+    <nav class="global-nav" id="globalNav" aria-label="Main">
+        <div class="rail-logo"><span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span></div>
+        <button class="rail-item" id="railAccount" type="button" onclick="toggleAccountTray()" aria-controls="accountTray" aria-expanded="false"><span class="rail-avatar" id="railAvatar">?</span>Account</button>
+        <a class="rail-item" href="#dashboard" data-page="dashboard" data-roles="admin,faculty,student"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 1 18 0"/><path d="M12 12l4-4"/><path d="M5 18h14"/></svg>Dashboard</a>
+        <a class="rail-item" href="#reader" data-page="reader" data-roles="admin,faculty,student"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>Badge reader</a>
+        <a class="rail-item" href="#rooms" data-page="rooms" data-roles="admin,faculty,student"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17"/><path d="M3 21h18"/><circle cx="15" cy="12" r="1"/></svg>Rooms</a>
+        <a class="rail-item" href="#classes" data-page="classes" data-roles="admin,faculty,student"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Classes</a>
+        <a class="rail-item" href="#users" data-page="users" data-roles="admin"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Users</a>
+        <a class="rail-item" href="#profile" data-page="profile" data-roles="faculty,student"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Profile</a>
+        <a class="rail-item" href="#checks" data-page="checks" data-roles="admin"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Checks</a>
+    </nav>
+    <aside class="account-tray" id="accountTray" hidden aria-label="Account">
+        <button class="btn btn-secondary btn-sm tray-close" type="button" onclick="toggleAccountTray(false)" aria-label="Close account panel">✕</button>
+        <div class="tray-avatar" id="trayAvatar">?</div>
+        <div class="tray-name" id="trayName"></div>
+        <div class="tray-sub" id="traySub"></div>
+        <button id="headerSignOutBtn" class="btn btn-secondary btn-sm" onclick="logoutUser()" style="display: none;">Sign out</button>
+    </aside>
+        <div class="lockdown-strip" id="globalLockdownStrip" hidden role="alert">Campus lockdown in effect. Every door denies badge access until an administrator lifts it.</div>
+        <section class="page" id="page-dashboard" data-page="dashboard">
+            <div class="page-header">
+                <div><h1 class="page-title">Dashboard</h1></div>
+                
+            </div>
+            <div class="page-stack">
         <!-- Active Session Controls -->
         <div class="session-bar">
             <div class="session-info">
@@ -414,7 +504,6 @@
                 </div>
             </div>
             <div class="session-controls">
-                <button class="btn btn-primary btn-sm" id="btnRunTestSuite" onclick="runAutomatedTestSuite()" style="display: none;">Run system checks</button>
             </div>
         </div>
 
@@ -430,9 +519,39 @@
             <div id="lockdownNotice" class="badge badge-neutral" style="display: none;">Only administrators can start a lockdown</div>
         </div>
 
-        <!-- Core Grid -->
-        <div class="grid-2">
-
+            </div>
+            <div class="dash-cards">
+                <a class="dash-card" href="#reader" data-roles="admin,faculty,student">
+                    <div class="dash-card-top" style="background:#1b5aa6;"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg></div>
+                    <div class="dash-card-body"><div class="dash-card-title">Badge reader</div><div class="dash-card-sub">Swipe a badge and watch the load balancer</div></div>
+                </a>
+                <a class="dash-card" href="#rooms" data-roles="admin,faculty,student">
+                    <div class="dash-card-top" style="background:#127a3a;"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17"/><path d="M3 21h18"/><circle cx="15" cy="12" r="1"/></svg></div>
+                    <div class="dash-card-body"><div class="dash-card-title">Rooms</div><div class="dash-card-sub">Room list and door locks</div></div>
+                </a>
+                <a class="dash-card" href="#classes" data-roles="admin,faculty,student">
+                    <div class="dash-card-top" style="background:#6b3fa0;"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+                    <div class="dash-card-body"><div class="dash-card-title">Classes</div><div class="dash-card-sub">Courses, rosters and enrollment</div></div>
+                </a>
+                <a class="dash-card" href="#users" data-roles="admin">
+                    <div class="dash-card-top" style="background:#b3202a;"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                    <div class="dash-card-body"><div class="dash-card-title">Users</div><div class="dash-card-sub">All registered accounts</div></div>
+                </a>
+                <a class="dash-card" href="#profile" data-roles="faculty,student">
+                    <div class="dash-card-top" style="background:#0b7285;"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div>
+                    <div class="dash-card-body"><div class="dash-card-title">Profile</div><div class="dash-card-sub">Your details and the rooms you can enter</div></div>
+                </a>
+                <a class="dash-card" href="#checks" data-roles="admin">
+                    <div class="dash-card-top" style="background:#8a5300;"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                    <div class="dash-card-body"><div class="dash-card-title">Checks</div><div class="dash-card-sub">Run the end-to-end system checks</div></div>
+                </a>
+            </div>
+        </section>
+        <section class="page" id="page-reader" data-page="reader">
+            <div class="page-header">
+                <div><h1 class="page-title">Badge reader</h1><div class="page-sub">Swipe a badge at any room. Each request goes round-robin to an Access Log pod.</div></div>
+                
+            </div>
             <!-- Section 1: Door Swipe & Load Balancer Simulator -->
             <div class="card">
                 <div class="card-header">
@@ -456,7 +575,7 @@
                     <!-- Swipe Form -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
                         <div>
-                            <label class="form-label">Room</label>
+                            <label class="form-label" for="swipeRoomSelect">Room</label>
                             <select class="form-control" id="swipeRoomSelect">
                                 <option value="ENG-301">ENG-301 (Software Lab)</option>
                                 <option value="ENG-528">ENG-528 (Hardware Lab)</option>
@@ -464,8 +583,13 @@
                             </select>
                         </div>
                         <div>
-                            <label class="form-label">Swiping as</label>
+                            <label class="form-label" for="swipeAsSelect">Swiping as</label>
                             <input type="text" class="form-control" id="swipeRoleDisplay" value="Admin" readonly>
+                            <div id="swipeAsWrap" hidden>
+                                <select class="form-control" id="swipeAsSelect" data-placeholder="Search people…">
+                                    <option value="">Myself</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -490,11 +614,18 @@
                     <!-- Terminal Output -->
                     <div class="form-label">Recent responses (newest first)</div>
                     <div class="terminal" id="swipeResponseTerminal">
-                        <div class="terminal-line"><span class="terminal-key">No requests yet.</span></div>
+                        <div class="terminal-line terminal-empty"><span class="terminal-key">No requests yet.</span></div>
                     </div>
                 </div>
             </div>
 
+
+        </section>
+        <section class="page" id="page-rooms" data-page="rooms">
+            <div class="page-header">
+                <div><h1 class="page-title">Rooms</h1><div class="page-sub">Every room on campus and whether its door is locked.</div></div>
+                
+            </div>
             <!-- Section 2: Room Inventory & Management -->
             <div class="card">
                 <div class="card-header">
@@ -536,8 +667,12 @@
                 </div>
             </div>
 
-        </div>
-
+        </section>
+        <section class="page" id="page-classes" data-page="classes">
+            <div class="page-header">
+                <div><h1 class="page-title">Classes</h1><div class="page-sub">Courses, instructors and student enrollment.</div></div>
+                
+            </div>
         <!-- Section 3: Classroom & Course Portal (Role-Adaptive) -->
         <div id="classroomPortalSection" style="margin-top: 24px;">
             
@@ -667,6 +802,13 @@
 
         </div>
 
+
+        </section>
+        <section class="page" id="page-users" data-page="users">
+            <div class="page-header">
+                <div><h1 class="page-title">Users</h1><div class="page-sub">Everyone registered in the system.</div></div>
+                
+            </div>
         <!-- Admin: Complete user directory and assignment support -->
         <div class="card" id="adminUserManagementCard" style="display:none; margin-bottom:24px;">
             <div class="card-header">
@@ -686,6 +828,13 @@
             </div>
         </div>
 
+
+        </section>
+        <section class="page" id="page-profile" data-page="profile">
+            <div class="page-header">
+                <div><h1 class="page-title">Profile</h1></div>
+                
+            </div>
         <!-- Section 3B: Dedicated Student / Teacher Microservice Portal -->
         <div class="card" id="roleServicePortal" style="margin-bottom: 24px;">
             <div class="card-header">
@@ -719,6 +868,13 @@
             </div>
         </div>
 
+
+        </section>
+        <section class="page" id="page-checks" data-page="checks">
+            <div class="page-header">
+                <div><h1 class="page-title">System checks</h1><div class="page-sub">End-to-end checks against the live services.</div></div>
+                <div class="page-actions"><button class="btn btn-primary btn-sm" id="btnRunTestSuite" onclick="runAutomatedTestSuite()" style="display: none;">Run system checks</button></div>
+            </div>
         <!-- Section 4: Automated Verification Terminal -->
         <div class="card" id="verificationSuiteSection" style="display: none;">
             <div class="card-header">
@@ -735,6 +891,7 @@
             </div>
         </div>
 
+        </section>
     </div>
 
     <script>
@@ -805,7 +962,7 @@
             // Clear the previous user's load-balancer counts and swipe log.
             nodeCounts = {};
             document.getElementById('lbPool').innerHTML = '<div class="lb-node"><div class="lb-node-header"><span class="lb-node-name">No swipes yet</span></div><div class="lb-node-sub">Swipe a badge to see which pod answers.</div></div>';
-            document.getElementById('swipeResponseTerminal').innerHTML = '<div class="terminal-line"><span class="terminal-key">No requests yet.</span></div>';
+            document.getElementById('swipeResponseTerminal').innerHTML = '<div class="terminal-line terminal-empty"><span class="terminal-key">No requests yet.</span></div>';
             showLoginView();
         }
 
@@ -1661,10 +1818,13 @@
             const terminal = document.getElementById('swipeResponseTerminal');
             const roomNum = document.getElementById('swipeRoomSelect').value;
 
+            // Admins may simulate another person's badge; everyone else swipes as themselves.
+            const swipeAs = document.getElementById('swipeAsSelect');
+            const swipeAsOption = (currentRole === 'admin' && swipeAs && swipeAs.value) ? swipeAs.options[swipeAs.selectedIndex] : null;
             const swipePayload = {
                 userId: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
-                userEmail: currentUser.email,
-                userRole: currentUser.role,
+                userEmail: swipeAsOption ? swipeAsOption.value : currentUser.email,
+                userRole: swipeAsOption ? swipeAsOption.dataset.role : currentUser.role,
                 roomId: `ROOM-${roomNum}`,
                 roomNumber: roomNum,
                 building: 'Engineering Hall'
@@ -1732,6 +1892,7 @@
                 </div>
             `;
 
+            terminal.querySelector('.terminal-empty')?.remove();
             terminal.innerHTML = logHtml + terminal.innerHTML;
         }
 
@@ -2054,6 +2215,313 @@
                 await loadRoleServiceProfile();
             } catch (err) { alert(`Could not update profile: ${err.message}`); }
         }
+
+
+        // ====================================================================
+        // NAVIGATION RAIL, PAGES AND ACCOUNT TRAY (Canvas-style layout)
+        // ====================================================================
+        const PAGES = ['dashboard', 'reader', 'rooms', 'classes', 'users', 'profile', 'checks'];
+
+        function pageAllowed(name) {
+            const link = document.querySelector(`.rail-item[data-page="${name}"]`);
+            return !!link && !link.hidden;
+        }
+
+        function showPage(name) {
+            if (!PAGES.includes(name) || !pageAllowed(name)) name = 'dashboard';
+            document.querySelectorAll('.page').forEach(p => p.classList.toggle('active', p.dataset.page === name));
+            document.querySelectorAll('.rail-item[data-page]').forEach(a => {
+                if (a.dataset.page === name) a.setAttribute('aria-current', 'page');
+                else a.removeAttribute('aria-current');
+            });
+            if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
+            updateLockdownStrip();
+            toggleAccountTray(false);
+            window.scrollTo(0, 0);
+        }
+
+        window.addEventListener('hashchange', () => {
+            if (currentToken) showPage(location.hash.replace('#', ''));
+        });
+
+        function toggleAccountTray(open) {
+            const tray = document.getElementById('accountTray');
+            const btn = document.getElementById('railAccount');
+            if (!tray) return;
+            const show = typeof open === 'boolean' ? open : tray.hidden;
+            tray.hidden = !show;
+            if (btn) {
+                btn.setAttribute('aria-expanded', String(show));
+                if (show) btn.setAttribute('aria-current', 'page'); else btn.removeAttribute('aria-current');
+            }
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleAccountTray(false); });
+
+        function initialsOf(user) {
+            return String((user && (user.name || user.email)) || '?')
+                .split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+        }
+
+        // Shows only the menu items, dashboard cards and inputs that fit the role.
+        function applyNavForRole(role) {
+            document.querySelectorAll('[data-roles]').forEach(el => {
+                el.hidden = !el.dataset.roles.split(',').includes(role);
+            });
+            const initials = initialsOf(currentUser);
+            const railAvatar = document.getElementById('railAvatar');
+            const trayAvatar = document.getElementById('trayAvatar');
+            if (railAvatar) railAvatar.textContent = initials;
+            if (trayAvatar) trayAvatar.textContent = initials;
+            const trayName = document.getElementById('trayName');
+            const traySub = document.getElementById('traySub');
+            if (trayName) trayName.textContent = (currentUser && currentUser.name) || '';
+            if (traySub && currentUser) traySub.textContent = `${currentUser.email} · ${role.charAt(0).toUpperCase() + role.slice(1)}`;
+
+            const isAdmin = role === 'admin';
+            const swipeAsWrap = document.getElementById('swipeAsWrap');
+            const swipeRoleDisplay = document.getElementById('swipeRoleDisplay');
+            if (swipeAsWrap) swipeAsWrap.hidden = !isAdmin;
+            if (swipeRoleDisplay) swipeRoleDisplay.hidden = isAdmin;
+
+            showPage(location.hash.replace('#', '') || 'dashboard');
+        }
+
+        // Red strip on every page except the dashboard (which has the full banner).
+        function updateLockdownStrip() {
+            const strip = document.getElementById('globalLockdownStrip');
+            const banner = document.getElementById('lockdownBanner');
+            const onDashboard = document.querySelector('.page.active')?.dataset.page === 'dashboard';
+            if (strip && banner) strip.hidden = onDashboard || !banner.classList.contains('emergency-active');
+        }
+
+        // ====================================================================
+        // SEARCHABLE DROPDOWNS
+        // Every <select class="form-control"> and every email input backed by a
+        // <datalist> gets a click-to-open list that can also be searched by typing.
+        // The original element stays the source of truth, so existing code that
+        // reads .value keeps working.
+        // ====================================================================
+        function buildCombo(anchor, { getOptions, currentValue, onChoose, freeText }) {
+            const wrap = document.createElement('div');
+            wrap.className = 'combo';
+            anchor.parentNode.insertBefore(wrap, anchor);
+            const listId = 'combo-' + Math.random().toString(36).slice(2, 9);
+            const list = document.createElement('ul');
+            list.className = 'combo-list';
+            list.id = listId;
+            list.setAttribute('role', 'listbox');
+            list.hidden = true;
+            const caret = document.createElement('span');
+            caret.className = 'combo-caret';
+            caret.innerHTML = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+            return { wrap, list, caret, listId };
+        }
+
+        function attachComboBehaviour(input, list, { getOptions, currentValue, onChoose, onCancel }) {
+            let active = -1;
+            let shown = [];
+
+            function render(filter) {
+                const q = String(filter || '').trim().toLowerCase();
+                const all = getOptions();
+                shown = q ? all.filter(o => (o.label + ' ' + o.value + ' ' + (o.meta || '')).toLowerCase().includes(q)) : all;
+                const current = currentValue();
+                list.innerHTML = shown.length
+                    ? shown.map((o, i) => `<li class="combo-option${o.value === current ? ' is-current' : ''}" role="option" data-index="${i}" aria-selected="${i === active}">${escapeHtml(o.label)}${o.meta ? `<span class="combo-meta">${escapeHtml(o.meta)}</span>` : ''}</li>`).join('')
+                    : '<li class="combo-empty">No matches</li>';
+            }
+            function open() {
+                active = -1;
+                render('');
+                list.hidden = false;
+                input.setAttribute('aria-expanded', 'true');
+            }
+            function close() {
+                list.hidden = true;
+                input.setAttribute('aria-expanded', 'false');
+            }
+            function choose(i) {
+                const o = shown[i];
+                if (o) onChoose(o);
+                close();
+            }
+
+            input.setAttribute('role', 'combobox');
+            input.setAttribute('aria-autocomplete', 'list');
+            input.setAttribute('aria-controls', list.id);
+            input.setAttribute('aria-expanded', 'false');
+            input.addEventListener('focus', () => { open(); input.select(); });
+            input.addEventListener('click', () => { if (list.hidden) open(); });
+            input.addEventListener('input', () => { active = -1; render(input.value); list.hidden = false; });
+            input.addEventListener('keydown', e => {
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (list.hidden) open();
+                    active = Math.max(0, Math.min(shown.length - 1, active + (e.key === 'ArrowDown' ? 1 : -1)));
+                    render(input.value === currentLabel() ? '' : input.value);
+                    list.querySelector(`[data-index="${active}"]`)?.scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'Enter') {
+                    if (!list.hidden && shown.length) { e.preventDefault(); choose(active >= 0 ? active : 0); }
+                } else if (e.key === 'Escape') {
+                    close(); onCancel();
+                }
+            });
+            input.addEventListener('blur', () => setTimeout(() => { close(); onCancel(); }, 120));
+            list.addEventListener('mousedown', e => {
+                const li = e.target.closest('.combo-option');
+                if (li) { e.preventDefault(); choose(Number(li.dataset.index)); }
+            });
+            function currentLabel() {
+                const cur = getOptions().find(o => o.value === currentValue());
+                return cur ? cur.label : '';
+            }
+            return { render, isOpen: () => !list.hidden };
+        }
+
+        function enhanceSelect(select) {
+            if (!select || select.dataset.comboReady) return;
+            select.dataset.comboReady = '1';
+            const { wrap, list, caret } = buildCombo(select, {});
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'form-control combo-input';
+            input.autocomplete = 'off';
+            input.placeholder = select.dataset.placeholder || 'Select or type to search…';
+            if (select.id) {
+                input.id = select.id + 'Search';
+                document.querySelectorAll(`label[for="${select.id}"]`).forEach(l => { l.htmlFor = input.id; });
+            }
+            wrap.append(select, input, caret, list);
+            select.hidden = true;
+
+            const getOptions = () => [...select.options].map(o => ({ value: o.value, label: o.textContent.trim(), meta: o.dataset.meta || '' }));
+            const sync = () => {
+                const o = select.options[select.selectedIndex];
+                input.value = o ? o.textContent.trim() : '';
+            };
+            const combo = attachComboBehaviour(input, list, {
+                getOptions,
+                currentValue: () => select.value,
+                onChoose: o => {
+                    select.value = o.value;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                },
+                onCancel: sync
+            });
+
+            // Keep the visible text in step when code changes the options or the value.
+            new MutationObserver(() => { sync(); if (combo.isOpen()) combo.render(''); })
+                .observe(select, { childList: true, subtree: true, attributes: true, characterData: true });
+            const proto = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+            Object.defineProperty(select, 'value', {
+                configurable: true,
+                get() { return proto.get.call(this); },
+                set(v) { proto.set.call(this, v); sync(); }
+            });
+            sync();
+        }
+
+        // Email inputs with a <datalist>: pick a registered person or type any email.
+        function enhanceDatalistInput(input) {
+            if (!input || input.dataset.comboReady) return;
+            const datalist = document.getElementById(input.getAttribute('list'));
+            if (!datalist) return;
+            input.dataset.comboReady = '1';
+            input.removeAttribute('list');
+            input.classList.add('combo-input');
+            input.autocomplete = 'off';
+            const { wrap, list, caret } = buildCombo(input, {});
+            wrap.append(input, caret, list);
+            const getOptions = () => [...datalist.options].map(o => ({
+                value: o.value,
+                label: (o.textContent || o.value).trim(),
+                meta: o.textContent && o.textContent.trim() !== o.value ? o.value : ''
+            }));
+            const combo = attachComboBehaviour(input, list, {
+                getOptions,
+                currentValue: () => input.value,
+                onChoose: o => {
+                    input.value = o.value;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                },
+                onCancel: () => {}
+            });
+            new MutationObserver(() => { if (combo.isOpen()) combo.render(''); })
+                .observe(datalist, { childList: true, subtree: true });
+        }
+
+        function enhanceAllInputs() {
+            document.querySelectorAll('select.form-control').forEach(enhanceSelect);
+            document.querySelectorAll('input.form-control[list]').forEach(enhanceDatalistInput);
+        }
+        enhanceAllInputs();
+
+        // Admin "Swiping as" list: everyone registered, searchable by name, email or role.
+        function populateSwipeAsOptions() {
+            const select = document.getElementById('swipeAsSelect');
+            if (!select || !Array.isArray(adminUsersCache)) return;
+            const keep = select.value;
+            const me = (currentUser && currentUser.email || '').toLowerCase();
+            select.innerHTML = '<option value="">Myself</option>' + adminUsersCache
+                .filter(u => String(u.email || '').toLowerCase() !== me)
+                .sort((a, b) => String(a.role).localeCompare(String(b.role)) || String(a.name).localeCompare(String(b.name)))
+                .map(u => `<option value="${escapeHtml(u.email)}" data-role="${escapeHtml(String(u.role || '').toLowerCase())}" data-meta="${escapeHtml(u.email)}">${escapeHtml(u.name || u.email)} (${escapeHtml(u.role || '')})</option>`)
+                .join('');
+            select.value = [...select.options].some(o => o.value === keep) ? keep : '';
+        }
+
+        // ====================================================================
+        // HOOK THE NEW LAYOUT INTO THE EXISTING FUNCTIONS
+        // ====================================================================
+        const __applyRolePermissions = applyRolePermissions;
+        applyRolePermissions = function (role) {
+            __applyRolePermissions(role);
+            applyNavForRole(role);
+        };
+
+        const __showDashboardView = showDashboardView;
+        showDashboardView = function () {
+            document.body.classList.add('signed-in');
+            __showDashboardView();
+        };
+
+        const __showLoginView = showLoginView;
+        showLoginView = function () {
+            document.body.classList.remove('signed-in');
+            toggleAccountTray(false);
+            __showLoginView();
+        };
+
+        const __showRegisterView = showRegisterView;
+        showRegisterView = function () {
+            document.body.classList.remove('signed-in');
+            __showRegisterView();
+        };
+
+        const __logoutUser = logoutUser;
+        logoutUser = function () {
+            history.replaceState(null, '', location.pathname);
+            __logoutUser();
+        };
+
+        const __loadAdminUsers = loadAdminUsers;
+        loadAdminUsers = async function () {
+            await __loadAdminUsers.apply(this, arguments);
+            populateSwipeAsOptions();
+        };
+
+        const __checkEmergencyStatus = checkEmergencyStatus;
+        checkEmergencyStatus = async function () {
+            await __checkEmergencyStatus.apply(this, arguments);
+            updateLockdownStrip();
+        };
+
+        // "Select to swipe" on the Classes page jumps to the badge reader with that room chosen.
+        selectRoomForSwipe = function (roomNum) {
+            showPage('reader');
+            const select = document.getElementById('swipeRoomSelect');
+            if (select) select.value = roomNum;
+        };
 
 </script>
 </body>

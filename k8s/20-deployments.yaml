@@ -26,7 +26,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: registration
-          image: sokhadum/smart-campus-registration:build-20261118-170528
+          image: sokhadum/smart-campus-registration:build-20261118-211138
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -110,7 +110,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: authentication
-          image: sokhadum/smart-campus-authentication:build-20261118-170528
+          image: sokhadum/smart-campus-authentication:build-20261118-211138
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -187,7 +187,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: room
-          image: sokhadum/smart-campus-room:build-20261118-170528
+          image: sokhadum/smart-campus-room:build-20261118-211138
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -259,7 +259,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: permission
-          image: sokhadum/smart-campus-permission:build-20261118-170528
+          image: sokhadum/smart-campus-permission:build-20261118-211138
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -331,7 +331,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: access-log
-          image: sokhadum/smart-campus-access-log:build-20261118-170528
+          image: sokhadum/smart-campus-access-log:build-20261118-211138
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -403,7 +403,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: emergency
-          image: sokhadum/smart-campus-emergency:build-20261118-170528
+          image: sokhadum/smart-campus-emergency:build-20261118-211138
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -475,7 +475,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: student
-          image: sokhadum/smart-campus-student:build-20261118-170528
+          image: sokhadum/smart-campus-student:build-20261118-211138
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -547,7 +547,7 @@ spec:
         runAsUser: 1000
       containers:
         - name: teacher
-          image: sokhadum/smart-campus-teacher:build-20261118-170528
+          image: sokhadum/smart-campus-teacher:build-20261118-211138
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
