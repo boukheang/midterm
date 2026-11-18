@@ -143,6 +143,23 @@ use, so run `scripts\dashboard.ps1` once **before** the presentation while onlin
    node run_tests.js
    ```
 
+## Testing with Postman
+
+Import both files from [`postman/`](postman/) into Postman:
+`SmartCampus-Final.postman_collection.json` and `SmartCampus-Kubernetes.postman_environment.json`.
+Select the **Smart Campus - Kubernetes (localhost)** environment, then run the folders
+**in order** (or use *Run collection*). The first request creates fresh test users and a
+room, tokens are saved automatically, and folder 9 deletes everything again.
+
+| Folder | Owner |
+|---|---|
+| 1. Registration · 2. Authentication · 5. Access Log | Boukheang |
+| 3. Room & Enrollment · 4. Student & Teacher portals | Panhavan |
+| 6. API Gateway · 7. Permission · 8. Emergency Alert | Sokhadom |
+
+Every request has tests, so the **Test Results** tab shows PASS for each check.
+If the app runs on another port, change `baseUrl` in the environment.
+
 ## Security model
 
 - The gateway **removes any `X-User-*` headers sent by clients** and sets them only
