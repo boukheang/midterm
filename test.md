@@ -2,15 +2,19 @@
 
 > **Base URL**:
 >
-> - Local Testing: `http://localhost:4000`
-> - EC2 Deployment: `http://<EC2_PUBLIC_IP>:4000`
+> - Through the Kubernetes Ingress: `http://localhost` (in a browser also `http://smartcampus.localhost`)
+> - If the Ingress isn't published on localhost: run `scripts\open-app.ps1` first
+>
+> The admin account (`admin@campus.edu`) is created automatically from the
+> Kubernetes Secret by `scripts/deploy.ps1`. **Public registration cannot create
+> admins**; it only accepts `student` and `faculty`.
 
 ---
 
 ## 1. Test Registration
 
 - **Method**: `POST`
-- **URL**: `http://localhost:4000/reg`
+- **URL**: `http://localhost/reg`
 - **Headers**:
   ```http
   Content-Type: application/json
@@ -18,14 +22,16 @@
 - **Body (raw JSON)**:
   ```json
   {
-    "name": "Admin Director",
-    "email": "admin@campus.edu",
+    "name": "Faculty Tester",
+    "email": "faculty1@campus.edu",
     "password": "Password123!",
-    "role": "admin",
-    "department": "Campus Security"
+    "role": "faculty",
+    "department": "Engineering"
   }
   ```
 - **Expected Status**: `201 Created`
+- **Negative check**: the same request with `"role": "admin"` returns `403 Forbidden`
+  (`Only an administrator can create admin accounts.`).
 - **Expected Response**:
   ```json
   {
@@ -33,10 +39,10 @@
     "message": "User registered successfully",
     "user": {
       "id": "USR-xxxx",
-      "name": "Admin Director",
-      "email": "admin@campus.edu",
-      "role": "admin",
-      "department": "Campus Security"
+      "name": "Faculty Tester",
+      "email": "faculty1@campus.edu",
+      "role": "faculty",
+      "department": "Engineering"
     }
   }
   ```
@@ -46,7 +52,7 @@
 ## 2. Test Login & Get JWT Token
 
 - **Method**: `POST`
-- **URL**: `http://localhost:4000/login`
+- **URL**: `http://localhost/login`
 - **Headers**:
   ```http
   Content-Type: application/json
@@ -82,7 +88,7 @@
 ## 3. Test Room Management (With Token)
 
 - **Method**: `POST`
-- **URL**: `http://localhost:4000/api/rooms`
+- **URL**: `http://localhost/api/rooms`
 - **Headers**:
   ```http
   Content-Type: application/json
@@ -121,7 +127,7 @@
 # Permission Microservice(Admin only)
 ## 1. grant permission to student/faculty
   **Method**: `POST`
-- **URL**: `http://localhost:4000/api/permissions/grant`
+- **URL**: `http://localhost/api/permissions/grant`
 - **Headers**:
 
   ```http
@@ -169,7 +175,7 @@
 ## 1. Get Student Information (With Token)
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/students/user_info`
+- **URL**: `http://localhost/api/students/user_info`
 - **Headers**:
 
   ```http
@@ -195,7 +201,7 @@
 ## 2. Update Student Information (With Token)
 
 - **Method**: `PUT`
-- **URL**: `http://localhost:4000/api/students/update_info`
+- **URL**: `http://localhost/api/students/update_info`
 - **Headers**:
 
   ```http
@@ -230,7 +236,7 @@
 ## 3. Get Student Room Schedule (With Token)
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/students/room_schedule`
+- **URL**: `http://localhost/api/students/room_schedule`
 - **Headers**:
 
   ```http
@@ -267,7 +273,7 @@
 ## 1. Get Teacher Information (With Token)
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/teachers/user_info`
+- **URL**: `http://localhost/api/teachers/user_info`
 - **Headers**:
 
   ```http
@@ -293,7 +299,7 @@
 ## 2. Update Teacher Information (With Token)
 
 - **Method**: `PUT`
-- **URL**: `http://localhost:4000/api/teachers/update_info`
+- **URL**: `http://localhost/api/teachers/update_info`
 - **Headers**:
 
   ```http
@@ -329,7 +335,7 @@
 ## 3. Get Teacher Room Schedule (With Token)
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/teachers/room_schedule`
+- **URL**: `http://localhost/api/teachers/room_schedule`
 - **Headers**:
 
   ```http
@@ -369,7 +375,7 @@
 ### 4.1 Wrong Password
 
 - **Method**: `POST`
-- **URL**: `http://localhost:4000/login`
+- **URL**: `http://localhost/login`
 - **Headers**: `Content-Type: application/json`
 - **Body (raw JSON)**:
   ```json
@@ -393,7 +399,7 @@
 ### 4.2 Missing Token
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/rooms`
+- **URL**: `http://localhost/api/rooms`
 - **Headers**: *(Do NOT provide Authorization header)*
 - **Expected Status**: `401 Unauthorized`
 - **Expected Response**:
@@ -410,7 +416,7 @@
 ### 4.3 Invalid / Tampered Token
 
 - **Method**: `GET`
-- **URL**: `http://localhost:4000/api/rooms`
+- **URL**: `http://localhost/api/rooms`
 - **Headers**:
   ```http
   Authorization: Bearer fake123
@@ -430,11 +436,11 @@
 ### 4.4 Unauthorized Role (Role-Based Access Control)
 
 1. Register and login as a `student`:
-   - `POST http://localhost:4000/reg` with `"role": "student"`
-   - `POST http://localhost:4000/login` to get the student token.
+   - `POST http://localhost/reg` with `"role": "student"`
+   - `POST http://localhost/login` to get the student token.
 2. Attempt to create a room using the student token:
    - **Method**: `POST`
-   - **URL**: `http://localhost:4000/api/rooms`
+   - **URL**: `http://localhost/api/rooms`
    - **Headers**:
      ```http
      Content-Type: application/json
@@ -466,7 +472,7 @@
 ### 5.1 Door Badge Swipe Simulation
 
 - **Method**: `POST`
-- **URL**: `http://localhost:4000/api/logs/swipe`
+- **URL**: `http://localhost/api/logs/swipe`
 - **Headers**:
   ```http
   Content-Type: application/json
@@ -486,7 +492,8 @@
 - **Expected Status**: `200 OK`
 - **Response Headers to inspect**:
   - `X-Load-Balanced-By`: `API-Gateway-RoundRobin`
-  - `X-Served-By-Instance`: `AccessLog-Instance-1` or `AccessLog-Instance-2` *(Alternates on each request)*
+  - `X-Served-By-Instance`: the Access Log **pod name**, e.g. `access-log-service-7d9c…-x2k4p` *(alternates between pods on each request)*
+- **Note**: students and faculty always swipe as themselves. `userEmail`/`userRole` in the body are only honoured for admins (badge simulator).
 
 ---
 
@@ -494,29 +501,28 @@
 
 In addition to manual Postman requests, the API Gateway serves an interactive live demonstration console.
 
-- **Console URL**: `http://localhost:4000/` (or `http://localhost:4000/dashboard`)
-- **EC2 Deployment URL**: `http://<EC2_PUBLIC_IP>:4000/`
+- **Console URL**: `http://localhost/` (or `http://localhost/dashboard`)
 
 ### 6.1 Testing the Round-Robin Load Balancer Visually
 
-1. Open `http://localhost:4000/` in your browser.
+1. Open `http://localhost/` in your browser.
 2. Under **Door Badge Swipe & Round-Robin Load Balancer**:
    - Select a room from the **Target Room** dropdown (e.g. `ENG-301`).
-   - Click **"Swipe Badge (Single)"** or **"Simulate 4x Swipes"**.
+   - Click **"Swipe badge"** or **"Swipe 4 times"**.
 3. **What to Observe**:
-   - The active instance card (`AccessLog-Instance-1` vs `AccessLog-Instance-2`) highlights with a blue border during each request.
-   - The request counters increment, maintaining an even 50% / 50% load distribution.
+   - One card per Access Log pod appears; the pod that served the request highlights with a blue border.
+   - The request counters increment evenly across pods (scale with `kubectl -n smart-campus scale deploy access-log-service --replicas=3` and a third card appears).
    - The **Physical Solenoid / Lock Status** box flashes `ACCESS GRANTED` in green when the room is unlocked.
    - The embedded terminal prints the required response headers:
      - `X-Load-Balanced-By: API-Gateway-RoundRobin`
-     - `X-Served-By-Instance: AccessLog-Instance-1` / `AccessLog-Instance-2`
+     - `X-Served-By-Instance: <access-log pod name>`
      - Status code and response latency.
 
 ### 6.2 Testing Room Management & Lock Control
 
 1. In the **Campus Room Management** table on the right:
    - Click the **"Lock"** button on any room (e.g., `ENG-146`). The room status changes to `LOCKED`.
-2. Go back to the swipe simulator, select that locked room, and click **"Swipe Badge (Single)"**.
+2. Go back to the swipe simulator, select that locked room, and click **"Swipe badge"**.
 3. **What to Observe**:
    - The solenoid status box flashes red: `DOOR DEADBOLTED • Denied (ROOM_PHYSICALLY_LOCKED)`.
    - Access decision returns `DENIED`.
@@ -527,7 +533,7 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
 
 ### 6.3 Testing Campus Emergency Lockdown
 
-1. In the top emergency banner, click **"Activate Campus Lockdown"**.
+1. In the top emergency banner, click **"Start campus lockdown"**.
 2. **What to Observe**:
    - The banner turns red: `CAMPUS LOCKDOWN ACTIVE`.
    - All rooms across the campus are immediately put into emergency lock.
@@ -536,5 +542,5 @@ In addition to manual Postman requests, the API Gateway serves an interactive li
 
 ### 6.4 One-Click Automated Verification
 
-1. Click the blue **"Run test.md Verification"** button in the top session bar.
+1. Click the **"Run system checks"** button next to your name.
 2. The verification terminal runs all 5 test sections live and displays a green `ALL CHECKS PASSED (100%)` badge.

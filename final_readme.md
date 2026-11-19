@@ -1,223 +1,204 @@
-# Smart Campus Access Control System
+# Smart Campus Access Control — Final Project (Kubernetes)
 
-## Presentation Deployment Guide
-
-This project is a Kubernetes-based microservices system for smart-campus
-access control. All client requests pass through the API Gateway. The
-microservices use MongoDB Atlas; no database container is deployed.
+Microservices for smart-campus door access, deployed on Kubernetes. Every
+request enters through the **API Gateway**, which verifies the JWT, enforces
+role-based access control and load-balances door swipes across the Access Log pods.
 
 ## Architecture
 
-| Component | Kubernetes access | Port | Purpose |
+| Component | Kubernetes object | Port | Purpose |
 |---|---|---:|---|
-| API Gateway | `LoadBalancer` | 4000 | Only client entry point |
-| Registration Service | `ClusterIP` | 5001 | User registration |
-| Authentication Service | `ClusterIP` | 5002 | Login and JWT tokens |
-| Room Service | `ClusterIP` | 5003 | Room and lock management |
-| Permission Service | `ClusterIP` | 5004 | Access permissions |
-| Access Log Service 1 | `ClusterIP` | 5005 | Door swipe logging |
-| Access Log Service 2 | `ClusterIP` | 5015 | Load-balanced log replica |
-| Emergency Service | `ClusterIP` | 5006 | Lockdown and incident reports |
-| Student Service | `ClusterIP` | 5007 | Student management |
-| Teacher Service | `ClusterIP` | 5008 | Teacher management |
-| MongoDB Atlas | Cloud database | - | Persistent application data |
+| Ingress (NGINX) | Ingress + NGINX Ingress Controller | 80 | Public entry point: `http://smartcampus.localhost` / `http://localhost` → API Gateway |
+| API Gateway | Deployment + `ClusterIP` Service | 4000 | Application entry point: JWT + RBAC, round-robin LB, dashboard UI |
+| Registration | Deployment + `ClusterIP` | 5001 | Sign-up, admin user management, bootstrap admin |
+| Authentication | Deployment + `ClusterIP` | 5002 | Login, JWT issuing |
+| Room | Deployment + `ClusterIP` | 5003 | Rooms, locks, classroom enrollment |
+| Permission | Deployment + `ClusterIP` | 5004 | Time/day-based access grants (admin) |
+| Access Log | Deployment (**2–5 replicas, HPA**) + `ClusterIP` + headless Service | 5005 | Door swipe decisions + audit log |
+| Emergency | Deployment + `ClusterIP` | 5006 | Lockdowns and incident reports |
+| Student | Deployment + `ClusterIP` | 5007 | Student profile & schedule |
+| Teacher | Deployment + `ClusterIP` | 5008 | Teacher profile & schedule |
+| MongoDB | StatefulSet + PersistentVolume | 27017 | Database (inside the cluster) |
 
-Kubernetes manifests are in [`k8s/`](D:/Agent/cld/midterm/k8s).
+Code shared by the services lives in [`shared/`](shared/) (DB connection, health
+probes, identity/role checks, shared models, permission time-window rules, and
+the Student/Teacher portal routes), so the same logic is not copy-pasted into
+each service.
 
-## Database Configuration
+Kubernetes manifests are in [`k8s/`](k8s/):
 
-The local `.env` file contains the MongoDB Atlas connection string. It is
-ignored by Git and must never be committed or shared.
+| File | What it creates |
+|---|---|
+| `00-namespace.yaml` | `smart-campus` namespace |
+| `01-config.yaml` | ConfigMap with service URLs |
+| `02-secret.example.yaml` | Example only — the deploy script creates the real Secret |
+| `03-storage.yaml` | PVC shared by the gateway and its log-reader sidecar |
+| `04-mongodb.yaml` | MongoDB StatefulSet with persistent storage |
+| `10-services.yaml` | Internal Services + headless Service for the Access Log pods |
+| `20-deployments.yaml` | The 8 backend Deployments (probes, resource limits, non-root) |
+| `21-gateway.yaml` | API Gateway Deployment, sidecar, internal `ClusterIP` Service |
+| `25-autoscaling.yaml` | HorizontalPodAutoscaler + PodDisruptionBudget for Access Log |
+| `30-network-policy.yaml` | NetworkPolicies: only the gateway can reach the services, only services can reach MongoDB |
+| `40-ingress.yaml` | Ingress: routes `smartcampus.localhost` and `localhost` to the gateway (controller installed by `deploy.ps1`) |
+| `dashboard/dashboard-admin.yaml` | Login account for the Kubernetes Dashboard |
 
-For Kubernetes, create the cluster Secret from `.env` and add a JWT secret:
+## Deploy on the demo laptop (Windows + Docker Desktop)
 
-```powershell
-kubectl -n smart-campus create secret generic campus-secrets `
-  --from-env-file=.env `
-  --from-literal=JWT_SECRET="replace-with-a-long-random-secret" `
-  --dry-run=client -o yaml | kubectl apply -f -
-```
+1. **Docker Desktop → Settings → Kubernetes → Enable Kubernetes → Apply & Restart.**
+   Wait until the Kubernetes indicator is green.
+2. Open PowerShell in the project folder and check the cluster:
 
-[`k8s/02-secret.example.yaml`](D:/Agent/cld/midterm/k8s/02-secret.example.yaml)
-documents the Secret shape, but should not be applied with placeholder values.
+   ```powershell
+   kubectl config use-context docker-desktop
+   kubectl get nodes
+   ```
 
-## Docker Desktop Kubernetes Deployment
+3. Build all images, load them into the cluster and deploy everything:
 
-Enable Kubernetes in **Docker Desktop → Settings → Kubernetes**, then click
-**Apply & Restart**.
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -InstallMetricsServer
+   ```
 
-Verify the cluster:
+   This script:
+   - builds all 9 images from the repository root (so `shared/` is included);
+   - **loads every image into the cluster**, including `mongo` and `busybox`.
+     Docker Desktop's newer kind-based Kubernetes can't see images built with
+     `docker build`, so without this step every pod fails with `ErrImageNeverPull`/`ErrImagePull`;
+   - creates the `campus-secrets` Secret with a random JWT key and the admin account;
+   - applies all manifests and waits until every pod is ready.
 
-```powershell
-kubectl config use-context docker-desktop
-kubectl get nodes
-```
+4. Open **http://localhost**. Traffic goes browser → Ingress → API Gateway. The script
+   installs the NGINX Ingress Controller and tells you which way works on that laptop:
+   - Docker Desktop normally publishes the Ingress on `http://localhost` directly.
+   - If it says it doesn't (some kind-mode setups, minikube), run this and keep the window open:
+     ```powershell
+     powershell -ExecutionPolicy Bypass -File scripts\open-app.ps1
+     ```
 
-Build the local images:
+   Log in with the **Admin** quick button (`admin@campus.edu` / `Password123!`, set by `-AdminPassword`).
 
-```powershell
-docker build -t smart-campus/api-gateway:local .\APIGateway_Microservice
-docker build -t smart-campus/registration:local .\Registration_Microservice
-docker build -t smart-campus/authentication:local .\Authentication_Microservice
-docker build -t smart-campus/room:local .\Room_Microservice
-docker build -t smart-campus/permission:local .\Permission_Microservice
-docker build -t smart-campus/access-log:local .\AccessLog_Microservice
-docker build -t smart-campus/emergency:local .\EmergencyAlert_Microservice
-docker build -t smart-campus/student:local .\Student_Microservice
-docker build -t smart-campus/teacher:local .\Teacher_Microservice
-```
+> Named address: **http://smartcampus.localhost** works too, with no setup. Browsers treat every
+> `*.localhost` name as this computer, so no hosts-file edit is needed. (Tests and Postman use
+> `http://localhost`, because Node.js does not resolve `*.localhost` names.)
+>
+> If port 80 is busy, run `scripts\open-app.ps1 -Port 8080` and open http://localhost:8080.
+> Stop any old midterm `docker compose` stack first (`docker compose down`).
 
-Apply the resources except the placeholder Secret:
+### Using the published Docker Hub images
 
-```powershell
-kubectl apply -f .\k8s\00-namespace.yaml
-kubectl apply -f .\k8s\01-config.yaml
-kubectl apply -f .\k8s\03-storage.yaml
-kubectl apply -f .\k8s\10-services.yaml
-```
-
-Then create the Secret from `.env` using the command above. Check the
-application deployments and Ingress:
-
-```powershell
-kubectl apply -f .\k8s\20-deployments.yaml
-kubectl apply -f .\k8s\21-gateway-deployment.yaml
-kubectl apply -f .\k8s\30-ingress.yaml
-kubectl -n smart-campus get pods
-kubectl -n smart-campus get services
-kubectl -n smart-campus get pvc
-kubectl -n smart-campus get ingress
-```
-
-All pods should be `Running`. The API Gateway should be `2/2` because it
-contains the gateway container and a shared-volume log-reader sidecar.
-
-## Local Presentation Access
-
-For a reliable local demonstration, forward the gateway port:
+All 9 service images are public on Docker Hub as `sokhadum/smart-campus-<service>`, and
+`k8s/*.yaml` points at one pinned build tag of them. Any laptop can deploy without building:
 
 ```powershell
-kubectl -n smart-campus port-forward service/api-gateway 4000:4000
+powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -UseDockerHub -InstallMetricsServer
 ```
 
-Open:
+To publish a new version (signed in to Docker Hub as the image owner), run
+`scripts\build-images.ps1 -Registry sokhadum -Push`, then commit the updated `k8s/*.yaml`.
+Without `-UseDockerHub`, `deploy.ps1` builds the images locally instead (works offline).
 
-```text
-http://localhost:4000/
-```
+After a code change, just run `scripts\deploy.ps1` again. Each build gets a unique
+image tag (e.g. `build-20261118-0130`), so Kubernetes always rolls out the code you
+just built. With a plain `:local` tag, a node that already has that tag would keep
+running the old image. If you used `scripts\open-app.ps1`, restart it after a redeploy
+(a port-forward is tied to the pod that existed when it started).
 
-To demonstrate the domain name locally, open
-`C:\Windows\System32\drivers\etc\hosts` as Administrator and add:
-
-```text
-127.0.0.1 aupp.com
-```
-
-Then browse to:
-
-```text
-http://aupp.com:4000/
-```
-
-This is local hosts-file DNS. Real Fanout DNS requires a publicly reachable
-server or load balancer IP. The Ingress host is already configured as
-`aupp.com` in [`k8s/30-ingress.yaml`](D:/Agent/cld/midterm/k8s/30-ingress.yaml).
-
-## Recommended Demonstration Sequence
-
-### 1. Show Kubernetes resources
+### minikube instead of Docker Desktop
 
 ```powershell
-kubectl -n smart-campus get pods,services,pvc,ingress
+minikube start
+kubectl config use-context minikube
+powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -InstallMetricsServer
+powershell -ExecutionPolicy Bypass -File scripts\open-app.ps1
 ```
 
-Explain that only `api-gateway` is externally exposed. All other services are
-`ClusterIP` services and can only be reached inside the cluster.
-
-### 2. Show the API Gateway
-
-Open the dashboard at `http://localhost:4000/` and show:
-
-- Gateway health
-- Service routing
-- Room inventory
-- Door swipe controls
-- Emergency lockdown controls
-
-The gateway implementation is in
-[`APIGateway_Microservice/api-gateway.js`](D:/Agent/cld/midterm/APIGateway_Microservice/api-gateway.js).
-
-### 3. Demonstrate registration and login
-
-Register a user through `POST /reg`, then login through `POST /login`.
-Explain that the gateway forwards both requests to internal services and that
-login returns a JWT token.
-
-### 4. Demonstrate authorization
-
-Use the JWT to:
-
-1. Create or view a room.
-2. Lock a room.
-3. Attempt a protected operation with a missing or invalid token.
-4. Show the `401` or `403` response.
-
-### 5. Demonstrate round-robin load balancing
-
-Use `POST /api/logs/swipe` several times. Show that the response headers
-alternate between:
-
-```text
-X-Served-By-Instance: AccessLog-Instance-1
-X-Served-By-Instance: AccessLog-Instance-2
-```
-
-The gateway balances requests between the two access-log services.
-
-### 6. Demonstrate emergency lockdown
-
-Activate campus lockdown as an administrator, perform a door swipe, and show
-that access is denied. Lift the lockdown and repeat the swipe.
-
-### 7. Prove MongoDB Atlas connectivity
+## Kubernetes Dashboard (web UI)
 
 ```powershell
-kubectl -n smart-campus logs deployment/registration-service
-kubectl -n smart-campus logs deployment/access-log-service-1
+powershell -ExecutionPolicy Bypass -File scripts\dashboard.ps1
 ```
 
-Show the successful MongoDB connection messages. Explain that MongoDB is
-cloud-hosted rather than running in Docker.
+The script installs the official Kubernetes Dashboard, copies a login token to the
+clipboard and opens **https://localhost:8443**. Accept the certificate warning,
+choose **Token**, paste with Ctrl+V and sign in, then select the **smart-campus**
+namespace. Keep that PowerShell window open during the demo.
 
-### 8. Prove shared Kubernetes volume access
+What to show in the Dashboard:
+- **Workloads → Deployments**: all services green; scale `access-log-service` live.
+- **Pods**: click a pod → logs (e.g. MongoDB connection, swipe decisions).
+- **Services**: every app Service is internal (`ClusterIP`); the only way in is the **Ingress** (Service → Ingresses).
+- **Config and Storage**: ConfigMap, Secret (values hidden), PVCs.
+- With `-InstallMetricsServer`, CPU/memory graphs and the HPA status appear.
+
+The Dashboard and metrics-server images are downloaded from the internet on first
+use, so run `scripts\dashboard.ps1` once **before** the presentation while online.
+
+## Demo script
+
+1. **Cluster overview**
+   ```powershell
+   kubectl -n smart-campus get pods,svc,hpa,pvc,ingress
+   ```
+   Only `api-gateway` is exposed; all other Services are `ClusterIP`.
+2. **Login & RBAC**: log in as admin, faculty, student (quick buttons). Each role sees
+   different panels. Public sign-up only offers Student/Faculty. Admins come from the Secret.
+3. **Round-robin load balancing**: click *Swipe 4 times*. The panel shows each
+   Access Log **pod name** taking turns (`X-Served-By-Instance` header).
+4. **Scale live**: `kubectl -n smart-campus scale deploy access-log-service --replicas=3`
+   (or use the Dashboard). Within ~5 seconds the gateway discovers the new pod
+   through the headless Service and it appears in the panel. No restart needed.
+5. **Self-healing**: `kubectl -n smart-campus delete pod -l app=access-log-service --wait=false`
+   and watch Kubernetes recreate the pods while swipes keep working.
+6. **Classroom access**: admin assigns a teacher and enrolls a student. The enrolled
+   student's swipe is GRANTED, while a non-enrolled student gets `STUDENT_NOT_ENROLLED_IN_CLASS`.
+7. **Emergency lockdown**: admin activates lockdown → every swipe DENIED → lift it.
+8. **Shared volume (sidecar)**:
+   ```powershell
+   kubectl -n smart-campus logs deploy/api-gateway -c log-reader
+   ```
+9. **Automated checks**: *Run system checks* in the UI, or
+   ```powershell
+   node run_tests.js
+   ```
+
+## Testing with Postman
+
+Import both files from [`postman/`](postman/) into Postman:
+`SmartCampus-Final.postman_collection.json` and `SmartCampus-Kubernetes.postman_environment.json`.
+Select the **Smart Campus - Kubernetes via Ingress (localhost)** environment, then run the folders
+**in order** (or use *Run collection*). The first request creates fresh test users and a
+room, tokens are saved automatically, and folder 9 deletes everything again.
+
+| Folder | Owner |
+|---|---|
+| 1. Registration · 2. Authentication · 5. Access Log | Boukheang |
+| 3. Room & Enrollment · 4. Student & Teacher portals | Panhavan |
+| 6. API Gateway · 7. Permission · 8. Emergency Alert | Sokhadom |
+
+Every request has tests, so the **Test Results** tab shows PASS for each check.
+Requests go through the Ingress at `http://localhost`. If you used `open-app.ps1 -Port 8080`, change `baseUrl` to `http://localhost:8080`.
+
+## Security model
+
+- The gateway **removes any `X-User-*` headers sent by clients** and sets them only
+  from a verified JWT, so callers can't impersonate an admin with a header.
+- Every service re-checks the role itself (defence in depth).
+- NetworkPolicies block pod-to-pod traffic except gateway → services → MongoDB, so even a
+  pod inside the cluster can't call a service directly with forged headers.
+- Public registration can create only `student`/`faculty`. Admin accounts are created
+  by an existing admin or bootstrapped from the Secret.
+- Students/faculty always swipe as themselves; only admins can simulate another user's swipe.
+- Students can read only their own access history.
+- The gateway and authentication service refuse to start without a 32+ character `JWT_SECRET`.
+- User input used in database searches is escaped (no regex injection).
+- Containers run as non-root with CPU/memory limits.
+
+## Useful commands
 
 ```powershell
-kubectl -n smart-campus logs deployment/api-gateway -c log-reader
+kubectl -n smart-campus get pods -w                              # watch pods
+kubectl -n smart-campus logs deploy/api-gateway -c gateway       # gateway logs
+kubectl -n smart-campus logs -l app=access-log-service --prefix  # all Access Log pods
+kubectl -n smart-campus describe hpa access-log-service          # autoscaler status
+kubectl delete namespace smart-campus                            # remove everything
 ```
-
-The gateway container writes request logs to `/var/log/campus/gateway.log`.
-The `log-reader` sidecar reads the same file through the
-`campus-shared-logs` PVC. This demonstrates shared data access by multiple
-containers.
-
-## Useful Commands
-
-```powershell
-# Gateway health
-curl.exe http://localhost:4000/health
-
-# Watch pods
-kubectl -n smart-campus get pods -w
-
-# Gateway logs
-kubectl -n smart-campus logs deployment/api-gateway -c gateway
-
-# Shared log-reader output
-kubectl -n smart-campus logs deployment/api-gateway -c log-reader
-
-# Stop the local port-forward
-# Press Ctrl+C in the port-forward terminal
-```
-
-The detailed endpoint and expected-response checks are in
-[`test.md`](D:/Agent/cld/midterm/test.md).

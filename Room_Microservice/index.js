@@ -1,17 +1,29 @@
 const express = require('express');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
-const app = express();
-app.use(express.json());
-
-const db = require('./dbconnect.js');
+const { connectDB } = require('../shared/db');
+const { registerHealthRoutes, requireRole, generateId, containsInsensitive, exactInsensitive, startServer } = require('../shared/service');
 const RoomModel = require('./room_schema.js');
+
+const app = express();
+app.use(express.json({ limit: '100kb' }));
 
 const PORT = process.env.PORT || 5003;
 
-function generateId(prefix = 'ROOM') {
-    const rand = Math.floor(100 + Math.random() * 900);
-    return `${prefix}-${Date.now().toString().slice(-4)}${rand}`;
+connectDB(mongoose, 'Room Service');
+
+// Role guards (defence in depth - the API Gateway applies the same rules).
+const anyUser = requireRole('admin', 'faculty', 'student');
+const adminOnly = requireRole('admin');
+const adminOrFaculty = requireRole('admin', 'faculty');
+
+// Fields an admin may change through PUT /api/rooms/:id. Rosters, ids and lock
+// flags have dedicated endpoints and must not be overwritten wholesale.
+const UPDATABLE_FIELDS = ['roomNumber', 'roomName', 'building', 'floor', 'roomType', 'capacity', 'securityClearance', 'courseCode', 'courseTitle'];
+
+function isAssignedFaculty(room, email) {
+    return (room.assignedFaculty || []).some(f => String(f.email || '').toLowerCase() === email);
 }
 
 /**
@@ -36,20 +48,13 @@ function resolveRoomQuery(param) {
 // ----------------------------------------------------
 // Health Check API
 // ----------------------------------------------------
-app.get('/health', (req, res) => {
-    return res.status(200).json({
-        service: 'Room Management Microservice (Team Member 1)',
-        status: 'UP',
-        port: PORT,
-        timestamp: new Date().toISOString()
-    });
-});
+registerHealthRoutes(app, mongoose, { service: 'Room Management Microservice', port: PORT });
 
 // ----------------------------------------------------
 // CREATE ROOM API (Admin)
 // POST /api/rooms
 // ----------------------------------------------------
-app.post('/api/rooms', async (req, res) => {
+app.post('/api/rooms', adminOnly, async (req, res) => {
     try {
         const {
             roomNumber,
@@ -120,18 +125,18 @@ app.post('/api/rooms', async (req, res) => {
 // GET ALL ROOMS API (With Filters)
 // GET /api/rooms?building=...&roomType=...&securityClearance=...
 // ----------------------------------------------------
-app.get('/api/rooms', async (req, res) => {
+app.get('/api/rooms', anyUser, async (req, res) => {
     try {
         const { building, roomType, securityClearance, isLocked, courseCode } = req.query;
         const filter = {};
 
-        if (building) filter.building = new RegExp(building, 'i');
+        if (building) filter.building = containsInsensitive(building);
         if (roomType) filter.roomType = roomType.toUpperCase();
         if (securityClearance) filter.securityClearance = securityClearance.toUpperCase();
         if (isLocked !== undefined) filter.isLocked = isLocked === 'true';
-        if (courseCode) filter.courseCode = new RegExp(courseCode, 'i');
+        if (courseCode) filter.courseCode = containsInsensitive(courseCode);
 
-        const rooms = await RoomModel.find(filter).sort({ building: 1, roomNumber: 1 });
+        const rooms = await RoomModel.find(filter).sort({ building: 1, roomNumber: 1 }).lean();
 
         return res.status(200).json({
             success: true,
@@ -150,7 +155,7 @@ app.get('/api/rooms', async (req, res) => {
 // GET ROOM BY ID OR ROOM NUMBER
 // GET /api/rooms/:id (Supports e.g. ENG-301 or :ENG-301 from Postman)
 // ----------------------------------------------------
-app.get('/api/rooms/:id', async (req, res) => {
+app.get('/api/rooms/:id', anyUser, async (req, res) => {
     try {
         const query = resolveRoomQuery(req.params.id);
         const room = await RoomModel.findOne(query);
@@ -179,7 +184,7 @@ app.get('/api/rooms/:id', async (req, res) => {
 // GET CLASSROOM ROSTER & ENROLLMENT STATUS
 // GET /api/rooms/:id/roster
 // ----------------------------------------------------
-app.get('/api/rooms/:id/roster', async (req, res) => {
+app.get('/api/rooms/:id/roster', anyUser, async (req, res) => {
     try {
         const query = resolveRoomQuery(req.params.id);
         const room = await RoomModel.findOne(query);
@@ -223,7 +228,7 @@ app.get('/api/rooms/:id/roster', async (req, res) => {
 // ASSIGN FACULTY (TEACHER) TO ROOM / COURSE (Admin)
 // POST /api/rooms/:id/assign-faculty
 // ----------------------------------------------------
-app.post('/api/rooms/:id/assign-faculty', async (req, res) => {
+app.post('/api/rooms/:id/assign-faculty', adminOnly, async (req, res) => {
     try {
         const { email, name, courseCode, courseTitle } = req.body;
         if (!email) {
@@ -278,7 +283,7 @@ app.post('/api/rooms/:id/assign-faculty', async (req, res) => {
 // REMOVE FACULTY FROM ROOM (Admin)
 // POST /api/rooms/:id/remove-faculty
 // ----------------------------------------------------
-app.post('/api/rooms/:id/remove-faculty', async (req, res) => {
+app.post('/api/rooms/:id/remove-faculty', adminOnly, async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
@@ -312,19 +317,12 @@ app.post('/api/rooms/:id/remove-faculty', async (req, res) => {
 // STUDENT REQUEST ENROLLMENT (Student / Admin)
 // POST /api/rooms/:id/request-enrollment
 // ----------------------------------------------------
-app.post('/api/rooms/:id/request-enrollment', async (req, res) => {
+app.post('/api/rooms/:id/request-enrollment', requireRole('student'), async (req, res) => {
     try {
-        const callerRole = String(req.headers['x-user-role'] || '').toLowerCase();
-        const callerEmail = String(req.headers['x-user-email'] || '').trim().toLowerCase();
-        const studentName = String(req.headers['x-user-name'] || req.body.name || callerEmail).trim();
-
-        // Identity must come from the API Gateway's verified JWT, never a client-supplied email.
-        if (!callerEmail || !['student', 'admin'].includes(callerRole)) {
-            return res.status(403).json({ success: false, message: 'Only authenticated students may request enrollment.' });
-        }
-        if (callerRole === 'admin') {
-            return res.status(403).json({ success: false, message: 'Administrators should use direct enrollment.' });
-        }
+        // Identity comes from the API Gateway's verified JWT (requireRole('student')),
+        // never from a client-supplied email.
+        const callerEmail = req.identity.email;
+        const studentName = req.identity.name || callerEmail;
 
         const query = resolveRoomQuery(req.params.id);
         const room = await RoomModel.findOne(query);
@@ -385,7 +383,7 @@ app.post('/api/rooms/:id/request-enrollment', async (req, res) => {
 // APPROVE ENROLLMENT REQUEST (Faculty / Admin)
 // POST /api/rooms/:id/approve-enrollment
 // ----------------------------------------------------
-app.post('/api/rooms/:id/approve-enrollment', async (req, res) => {
+app.post('/api/rooms/:id/approve-enrollment', adminOrFaculty, async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
@@ -406,7 +404,7 @@ app.post('/api/rooms/:id/approve-enrollment', async (req, res) => {
             return res.status(403).json({ success: false, message: 'Only assigned faculty or administrators may approve enrollment.' });
         }
         if (callerRole === 'faculty') {
-            const isAssigned = room.assignedFaculty.some(f => String(f.email || '').toLowerCase() === callerEmail);
+            const isAssigned = isAssignedFaculty(room, callerEmail);
             if (!isAssigned) {
                 return res.status(403).json({
                     success: false,
@@ -454,7 +452,7 @@ app.post('/api/rooms/:id/approve-enrollment', async (req, res) => {
 // REJECT ENROLLMENT REQUEST (Faculty / Admin)
 // POST /api/rooms/:id/reject-enrollment
 // ----------------------------------------------------
-app.post('/api/rooms/:id/reject-enrollment', async (req, res) => {
+app.post('/api/rooms/:id/reject-enrollment', adminOrFaculty, async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
@@ -475,7 +473,7 @@ app.post('/api/rooms/:id/reject-enrollment', async (req, res) => {
             return res.status(403).json({ success: false, message: 'Only assigned faculty or administrators may reject enrollment.' });
         }
         if (callerRole === 'faculty') {
-            const isAssigned = room.assignedFaculty.some(f => String(f.email || '').toLowerCase() === callerEmail);
+            const isAssigned = isAssignedFaculty(room, callerEmail);
             if (!isAssigned) {
                 return res.status(403).json({
                     success: false,
@@ -505,7 +503,7 @@ app.post('/api/rooms/:id/reject-enrollment', async (req, res) => {
 // DIRECT ENROLL STUDENT (Admin)
 // POST /api/rooms/:id/enroll-student
 // ----------------------------------------------------
-app.post('/api/rooms/:id/enroll-student', async (req, res) => {
+app.post('/api/rooms/:id/enroll-student', adminOnly, async (req, res) => {
     try {
         const { email, name } = req.body;
         if (!email) {
@@ -555,7 +553,7 @@ app.post('/api/rooms/:id/enroll-student', async (req, res) => {
 // REMOVE STUDENT FROM CLASS (Admin / Faculty)
 // POST /api/rooms/:id/remove-student
 // ----------------------------------------------------
-app.post('/api/rooms/:id/remove-student', async (req, res) => {
+app.post('/api/rooms/:id/remove-student', adminOrFaculty, async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) {
@@ -572,7 +570,7 @@ app.post('/api/rooms/:id/remove-student', async (req, res) => {
         const callerEmail = (req.headers['x-user-email'] || '').toLowerCase();
 
         if (callerRole === 'faculty') {
-            const isAssigned = room.assignedFaculty.some(f => f.email === callerEmail);
+            const isAssigned = isAssignedFaculty(room, callerEmail);
             if (!isAssigned) {
                 return res.status(403).json({
                     success: false,
@@ -602,10 +600,16 @@ app.post('/api/rooms/:id/remove-student', async (req, res) => {
 // UPDATE ROOM API (Admin)
 // PUT /api/rooms/:id
 // ----------------------------------------------------
-app.put('/api/rooms/:id', async (req, res) => {
+app.put('/api/rooms/:id', adminOnly, async (req, res) => {
     try {
         const query = resolveRoomQuery(req.params.id);
-        const updateData = { ...req.body };
+        const updateData = {};
+        for (const field of UPDATABLE_FIELDS) {
+            if (req.body && req.body[field] !== undefined) updateData[field] = req.body[field];
+        }
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ success: false, message: `Provide at least one of: ${UPDATABLE_FIELDS.join(', ')}` });
+        }
 
         if (updateData.roomNumber) updateData.roomNumber = updateData.roomNumber.toString().replace(/^:/, '').toUpperCase().trim();
         if (updateData.roomType) updateData.roomType = updateData.roomType.toUpperCase().trim();
@@ -643,7 +647,7 @@ app.put('/api/rooms/:id', async (req, res) => {
 // TOGGLE ROOM LOCK STATUS (Admin / Assigned Faculty)
 // PATCH /api/rooms/:id/toggle-lock
 // ----------------------------------------------------
-app.patch('/api/rooms/:id/toggle-lock', async (req, res) => {
+app.patch('/api/rooms/:id/toggle-lock', adminOrFaculty, async (req, res) => {
     try {
         const query = resolveRoomQuery(req.params.id);
         const room = await RoomModel.findOne(query);
@@ -661,7 +665,7 @@ app.patch('/api/rooms/:id/toggle-lock', async (req, res) => {
 
         // If faculty, verify assigned to this classroom
         if (callerRole === 'faculty') {
-            const isAssigned = (room.assignedFaculty || []).some(f => f.email === callerEmail);
+            const isAssigned = isAssignedFaculty(room, callerEmail);
             if (!isAssigned) {
                 return res.status(403).json({
                     success: false,
@@ -690,15 +694,16 @@ app.patch('/api/rooms/:id/toggle-lock', async (req, res) => {
 });
 
 // ----------------------------------------------------
-// BATCH EMERGENCY LOCKDOWN TOGGLE (Internal Emergency Service)
+// BATCH EMERGENCY LOCKDOWN TOGGLE (Admin only)
 // PATCH /api/rooms/emergency/set-lockdown
+// Previously any faculty member could call this through the gateway's PATCH rule.
 // ----------------------------------------------------
-app.patch('/api/rooms/emergency/set-lockdown', async (req, res) => {
+app.patch('/api/rooms/emergency/set-lockdown', adminOnly, async (req, res) => {
     try {
         const { building, emergencyLocked } = req.body;
         const query = {};
         if (building && building !== 'ALL') {
-            query.building = new RegExp(`^${building}$`, 'i');
+            query.building = exactInsensitive(building);
         }
 
         const update = { isEmergencyLocked: Boolean(emergencyLocked) };
@@ -721,7 +726,7 @@ app.patch('/api/rooms/emergency/set-lockdown', async (req, res) => {
 // DELETE ROOM API (Admin)
 // DELETE /api/rooms/:id
 // ----------------------------------------------------
-app.delete('/api/rooms/:id', async (req, res) => {
+app.delete('/api/rooms/:id', adminOnly, async (req, res) => {
     try {
         const query = resolveRoomQuery(req.params.id);
         const deleted = await RoomModel.findOneAndDelete(query);
@@ -750,8 +755,6 @@ app.delete('/api/rooms/:id', async (req, res) => {
 });
 
 // Start Express Server
-app.listen(PORT, () => {
-    console.log(`[Room Service] Running on PORT: ${PORT}`);
-});
+startServer(app, PORT, 'Room Service');
 
 module.exports = app;

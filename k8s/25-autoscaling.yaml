@@ -1,0 +1,38 @@
+# Autoscale the Access Log (door swipe) service between 2 and 5 pods based on CPU.
+# Needs metrics-server (scripts/deploy.ps1 -InstallMetricsServer installs it).
+# New pods are picked up by the gateway's round-robin automatically via the
+# access-log-headless Service.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: access-log-service
+  namespace: smart-campus
+  labels:
+    app.kubernetes.io/part-of: smart-campus
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: access-log-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+---
+# Keep at least one Access Log pod running during voluntary disruptions
+# (e.g. node drain), so door swipes never stop completely.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: access-log-service
+  namespace: smart-campus
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: access-log-service

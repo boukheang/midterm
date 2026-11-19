@@ -1,12 +1,16 @@
+# Shared volume for the API Gateway request log (read by the log-reader sidecar).
+# No storageClassName: the cluster's default class is used, so this works on
+# Docker Desktop ("hostpath"), minikube ("standard") and kind alike.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: campus-shared-logs
   namespace: smart-campus
+  labels:
+    app.kubernetes.io/part-of: smart-campus
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-  storageClassName: standard

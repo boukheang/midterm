@@ -5,7 +5,10 @@
  */
 const http = require('http');
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:4000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost';  // through the Ingress
+// Bootstrap admin (seeded by the Registration service from the Kubernetes Secret).
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@campus.edu';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Password123!';
 
 function makeRequest(method, path, body = null, headers = {}) {
     return new Promise((resolve, reject) => {
@@ -96,7 +99,7 @@ async function runAllTests() {
         }
 
         if (!gatewayReady) {
-            throw new Error('API Gateway at ' + BASE_URL + ' is not reachable. Ensure docker compose up -d is running.');
+            throw new Error('API Gateway at ' + BASE_URL + ' is not reachable. Run scripts/deploy.ps1 (Kubernetes) or set BASE_URL.');
         }
 
         // 1. Registration
@@ -104,20 +107,28 @@ async function runAllTests() {
         console.log('1. TEST REGISTRATION');
         console.log('='.repeat(70));
 
-        const testAdminEmail = `admin_${Date.now()}@campus.edu`;
+        const testFacultyEmail = `faculty_${Date.now()}@campus.edu`;
         const regRes = await makeRequest('POST', '/reg', {
-            name: "Admin Director",
-            email: testAdminEmail,
+            name: "Faculty Tester",
+            email: testFacultyEmail,
             password: "Password123!",
-            role: "admin",
-            department: "Campus Security"
+            role: "faculty",
+            department: "Engineering"
         });
 
-        assert('1. Registration Status Code is 201', regRes.status === 201, `Status: ${regRes.status}`);
-        assert('1. Registration Response Structure', 
-            regRes.body.success === true && regRes.body.user && regRes.body.user.role === 'admin',
+        assert('1.1 Public Registration Status Code is 201', regRes.status === 201, `Status: ${regRes.status}`);
+        assert('1.1 Registration Response Structure',
+            regRes.body.success === true && regRes.body.user && regRes.body.user.role === 'faculty',
             `User ID: ${regRes.body.user ? regRes.body.user.id : 'N/A'}`
         );
+
+        const adminSelfReg = await makeRequest('POST', '/reg', {
+            name: "Intruder",
+            email: `intruder_${Date.now()}@campus.edu`,
+            password: "Password123!",
+            role: "admin"
+        });
+        assert('1.2 Public sign-up cannot create an admin (403)', adminSelfReg.status === 403, `Status: ${adminSelfReg.status}`);
 
         // 2. Login
         console.log('\n' + '='.repeat(70));
@@ -125,8 +136,8 @@ async function runAllTests() {
         console.log('='.repeat(70));
 
         const loginRes = await makeRequest('POST', '/login', {
-            email: testAdminEmail,
-            password: "Password123!",
+            email: ADMIN_EMAIL,
+            password: ADMIN_PASSWORD,
             role: "admin"
         });
 
@@ -169,7 +180,7 @@ async function runAllTests() {
 
         // 4.1 Wrong Password
         const wrongPwRes = await makeRequest('POST', '/login', {
-            email: testAdminEmail,
+            email: ADMIN_EMAIL,
             password: "WRONG_PASSWORD_123",
             role: "admin"
         });
@@ -263,6 +274,110 @@ async function runAllTests() {
             inst1 !== inst2,
             `Instance 1: ${inst1} -> Instance 2: ${inst2}`
         );
+
+        // 6. Security regression tests
+        console.log('\n' + '='.repeat(70));
+        console.log('6. TEST SECURITY FIXES');
+        console.log('='.repeat(70));
+
+        const facultyLogin = await makeRequest('POST', '/login', { email: testFacultyEmail, password: "Password123!" });
+        const facultyToken = facultyLogin.body.token;
+
+        const spoofed = await makeRequest('GET', '/api/permissions', null, {
+            Authorization: `Bearer ${studentToken}`,
+            'X-User-Role': 'admin',
+            'X-User-Email': ADMIN_EMAIL
+        });
+        assert('6.1 Forged X-User-Role header is ignored (403)', spoofed.status === 403, `Status: ${spoofed.status}`);
+
+        const facultyLockdown = await makeRequest('PATCH', '/api/rooms/emergency/set-lockdown',
+            { building: 'ALL', emergencyLocked: true }, { Authorization: `Bearer ${facultyToken}` });
+        assert('6.2 Faculty cannot trigger campus lockdown (403)', facultyLockdown.status === 403, `Status: ${facultyLockdown.status}`);
+
+        const impersonate = await makeRequest('POST', '/api/logs/swipe',
+            { userEmail: ADMIN_EMAIL, userRole: 'admin', roomNumber: testRoomNum }, { Authorization: `Bearer ${studentToken}` });
+        assert('6.3 Student cannot swipe as someone else (logged as self)',
+            impersonate.body.log && impersonate.body.log.userEmail === studentEmail,
+            `Logged as: ${impersonate.body.log && impersonate.body.log.userEmail}`);
+
+        const otherLogs = await makeRequest('GET', `/api/logs/user/${encodeURIComponent(ADMIN_EMAIL)}`, null, { Authorization: `Bearer ${studentToken}` });
+        assert("6.4 Student cannot read another user's access history (403)", otherLogs.status === 403, `Status: ${otherLogs.status}`);
+
+        // 7. Classroom enrollment controls door access
+        console.log('\n' + '='.repeat(70));
+        console.log('7. TEST CLASSROOM ENROLLMENT DOOR ACCESS');
+        console.log('='.repeat(70));
+
+        const adminAuth = { Authorization: `Bearer ${adminToken}` };
+        await makeRequest('POST', `/api/rooms/${testRoomNum}/assign-faculty`, { email: testFacultyEmail, name: 'Faculty Tester' }, adminAuth);
+
+        const beforeEnroll = await makeRequest('POST', '/api/logs/swipe', { roomNumber: testRoomNum }, { Authorization: `Bearer ${studentToken}` });
+        assert('7.1 Not-enrolled student is DENIED', beforeEnroll.body.accessDecision === 'DENIED',
+            `Decision: ${beforeEnroll.body.accessDecision} (${beforeEnroll.body.log && beforeEnroll.body.log.denialReason})`);
+
+        const facultySwipe = await makeRequest('POST', '/api/logs/swipe', { roomNumber: testRoomNum }, { Authorization: `Bearer ${facultyToken}` });
+        assert('7.2 Assigned faculty is GRANTED', facultySwipe.body.accessDecision === 'GRANTED', `Decision: ${facultySwipe.body.accessDecision}`);
+
+        await makeRequest('POST', `/api/rooms/${testRoomNum}/enroll-student`, { email: studentEmail }, adminAuth);
+        const afterEnroll = await makeRequest('POST', '/api/logs/swipe', { roomNumber: testRoomNum }, { Authorization: `Bearer ${studentToken}` });
+        assert('7.3 Enrolled student is GRANTED', afterEnroll.body.accessDecision === 'GRANTED',
+            `Decision: ${afterEnroll.body.accessDecision} (${afterEnroll.body.log && afterEnroll.body.log.denialReason})`);
+
+        const schedule = await makeRequest('GET', '/api/students/room_schedule', null, { Authorization: `Bearer ${studentToken}` });
+        assert('7.4 Student service lists the enrolled classroom',
+            schedule.status === 200 && Array.isArray(schedule.body.classrooms) && schedule.body.classrooms.some(c => c.roomNumber === testRoomNum),
+            `Status: ${schedule.status}`);
+
+        const teacherInfo = await makeRequest('GET', '/api/teachers/user_info', null, { Authorization: `Bearer ${facultyToken}` });
+        assert('7.5 Teacher service returns the faculty profile',
+            teacherInfo.status === 200 && teacherInfo.body.user && teacherInfo.body.user.email === testFacultyEmail,
+            `Status: ${teacherInfo.status}`);
+
+        // 8. Overnight permission windows
+        console.log('\n' + '='.repeat(70));
+        console.log('8. TEST OVERNIGHT PERMISSION WINDOW (22:00-02:00, Friday)');
+        console.log('='.repeat(70));
+
+        const grant = await makeRequest('POST', '/api/permissions/grant', {
+            userId: 'USR-NIGHT', userEmail: studentEmail, userRole: 'student',
+            roomId: `ROOM-${testRoomNum}`, roomNumber: testRoomNum,
+            allowedDays: ['Friday'], startTime: '22:00', endTime: '02:00'
+        }, adminAuth);
+        assert('8.1 Overnight grant accepted', grant.status === 201 || grant.status === 200, `Status: ${grant.status} ${grant.body.message || ''}`);
+
+        const check = ts => makeRequest('POST', '/api/permissions/check',
+            { userEmail: studentEmail, userRole: 'student', roomNumber: testRoomNum, timestamp: ts }, adminAuth);
+        const friLate = await check('2026-11-20T23:00:00');
+        assert('8.2 Friday 23:00 allowed', friLate.body.allowed === true, `Reason: ${friLate.body.reason}`);
+        const satEarly = await check('2026-11-21T01:30:00');
+        assert('8.3 Saturday 01:30 allowed (still Friday night)', satEarly.body.allowed === true, `Reason: ${satEarly.body.reason}`);
+        const satLate = await check('2026-11-21T03:00:00');
+        assert('8.4 Saturday 03:00 denied', satLate.body.allowed === false, `Reason: ${satLate.body.reason}`);
+        if (grant.body.permission) {
+            await makeRequest('DELETE', `/api/permissions/${grant.body.permission._id}`, null, adminAuth);
+        }
+
+        await makeRequest('DELETE', `/api/rooms/${testRoomNum}`, null, adminAuth);
+
+        // 9. Lifting a lockdown resolves every lockdown alert it covers
+        console.log('\n' + '='.repeat(70));
+        console.log('9. TEST LOCKDOWN LIFT');
+        console.log('='.repeat(70));
+
+        await makeRequest('POST', '/api/alerts/lockdown', { building: 'Test Hall A', description: 'Test lockdown A' }, adminAuth);
+        await makeRequest('POST', '/api/alerts/lockdown', { building: 'Test Hall B', description: 'Test lockdown B' }, adminAuth);
+        await makeRequest('POST', '/api/alerts/lockdown', { building: 'ALL', description: 'Test campus lockdown' }, adminAuth);
+
+        const partialLift = await makeRequest('POST', '/api/alerts/lift', { building: 'Test Hall A' }, adminAuth);
+        assert('9.1 One building cannot reopen during a campus lockdown (409)', partialLift.status === 409, `Status: ${partialLift.status}`);
+
+        const fullLift = await makeRequest('POST', '/api/alerts/lift', { building: 'ALL' }, adminAuth);
+        assert('9.2 Lift ALL resolves all 3 lockdown alerts', fullLift.status === 200 && fullLift.body.resolvedCount >= 3,
+            `Resolved: ${fullLift.body.resolvedCount}`);
+
+        const stillActive = await makeRequest('GET', '/api/alerts/active', null, adminAuth);
+        const activeLockdowns = (stillActive.body.alerts || []).filter(a => ['CAMPUS_LOCKDOWN', 'BUILDING_LOCKDOWN'].includes(a.alertType));
+        assert('9.3 No lockdown alerts left active', activeLockdowns.length === 0, `Active lockdowns: ${activeLockdowns.length}`);
 
         console.log('\n' + '='.repeat(70));
         console.log(`VERIFICATION COMPLETE: ${passedCount} PASSED, ${failedCount} FAILED`);
